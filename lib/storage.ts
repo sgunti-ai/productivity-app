@@ -37,6 +37,29 @@ export interface Goal {
   updatedAt: string;
 }
 
+export interface Habit {
+  id: string;
+  title: string;
+  description?: string;
+  category: string;
+  frequency: "daily" | "weekly" | "custom";
+  daysOfWeek?: number[]; // 0-6 for weekly habits
+  color: string;
+  goalId?: string;
+  completedDates: string[]; // ISO date strings
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface StreakData {
+  taskId?: string;
+  habitId?: string;
+  currentStreak: number;
+  longestStreak: number;
+  lastCompletedDate?: string;
+  updatedAt: string;
+}
+
 const TASKS_KEY = "@focusflow_tasks";
 const GOALS_KEY = "@focusflow_goals";
 const SETTINGS_KEY = "@focusflow_settings";
@@ -217,4 +240,127 @@ export function formatDateTime(dateString: string, timeString?: string): string 
     return `${formatted} at ${timeString}`;
   }
   return formatted;
+}
+
+const HABITS_KEY = "@focusflow_habits";
+const STREAKS_KEY = "@focusflow_streaks";
+
+// Habit Storage Functions
+export async function getHabits(): Promise<Habit[]> {
+  try {
+    const data = await AsyncStorage.getItem(HABITS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error("Error reading habits:", error);
+    return [];
+  }
+}
+
+export async function saveHabit(habit: Habit): Promise<void> {
+  try {
+    const habits = await getHabits();
+    const existingIndex = habits.findIndex((h) => h.id === habit.id);
+
+    if (existingIndex >= 0) {
+      habits[existingIndex] = { ...habit, updatedAt: new Date().toISOString() };
+    } else {
+      habits.push({ ...habit, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString() });
+    }
+
+    await AsyncStorage.setItem(HABITS_KEY, JSON.stringify(habits));
+  } catch (error) {
+    console.error("Error saving habit:", error);
+  }
+}
+
+export async function deleteHabit(habitId: string): Promise<void> {
+  try {
+    const habits = await getHabits();
+    const filtered = habits.filter((h) => h.id !== habitId);
+    await AsyncStorage.setItem(HABITS_KEY, JSON.stringify(filtered));
+  } catch (error) {
+    console.error("Error deleting habit:", error);
+  }
+}
+
+export async function completeHabitToday(habitId: string): Promise<void> {
+  try {
+    const habits = await getHabits();
+    const habit = habits.find((h) => h.id === habitId);
+    const today = getTodayDate();
+
+    if (habit && !habit.completedDates.includes(today)) {
+      habit.completedDates.push(today);
+      habit.updatedAt = new Date().toISOString();
+      await AsyncStorage.setItem(HABITS_KEY, JSON.stringify(habits));
+      await updateStreakData(habitId, true);
+    }
+  } catch (error) {
+    console.error("Error completing habit:", error);
+  }
+}
+
+// Streak Storage Functions
+export async function getStreaks(): Promise<StreakData[]> {
+  try {
+    const data = await AsyncStorage.getItem(STREAKS_KEY);
+    return data ? JSON.parse(data) : [];
+  } catch (error) {
+    console.error("Error reading streaks:", error);
+    return [];
+  }
+}
+
+export async function updateStreakData(id: string, isHabit: boolean = false): Promise<StreakData | null> {
+  try {
+    const streaks = await getStreaks();
+    const key = isHabit ? "habitId" : "taskId";
+    let streak = streaks.find((s) => (isHabit ? s.habitId === id : s.taskId === id));
+
+    if (!streak) {
+      streak = {
+        [key]: id,
+        currentStreak: 0,
+        longestStreak: 0,
+        updatedAt: new Date().toISOString(),
+      } as StreakData;
+      streaks.push(streak);
+    }
+
+    const today = getTodayDate();
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split("T")[0];
+
+    if (streak.lastCompletedDate === today) {
+      return streak;
+    } else if (streak.lastCompletedDate === yesterdayStr) {
+      streak.currentStreak += 1;
+    } else {
+      streak.currentStreak = 1;
+    }
+
+    if (streak.currentStreak > streak.longestStreak) {
+      streak.longestStreak = streak.currentStreak;
+    }
+
+    streak.lastCompletedDate = today;
+    streak.updatedAt = new Date().toISOString();
+
+    await AsyncStorage.setItem(STREAKS_KEY, JSON.stringify(streaks));
+    return streak;
+  } catch (error) {
+    console.error("Error updating streak:", error);
+    return null;
+  }
+}
+
+export async function getStreakData(id: string, isHabit: boolean = false): Promise<StreakData | null> {
+  try {
+    const streaks = await getStreaks();
+    return streaks.find((s) => (isHabit ? s.habitId === id : s.taskId === id)) || null;
+  } catch (error) {
+    console.error("Error getting streak data:", error);
+    return null;
+  }
 }

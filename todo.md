@@ -86,3 +86,29 @@
 - [ ] Cloud sync (optional)
 - [ ] Collaboration features
 - [ ] Dark mode animations
+
+
+## Phase 2: Enhancement Features
+
+### Notifications
+- [ ] Setup expo-notifications integration
+- [ ] Schedule task reminders
+- [ ] Schedule goal deadline reminders
+- [ ] Notification permission handling
+- [ ] Local notification scheduling
+
+### Streak Tracking
+- [x] Calculate daily completion streaks
+- [x] Display streak counter on home screen
+- [x] Streak statistics (longest streak, current streak)
+- [x] Streak reset logic
+- [x] Visual streak indicators
+
+### Habit Tracking
+- [x] Create habit data model
+- [x] Habit creation screen
+- [x] Daily habit check-in interface
+- [x] Habit history and statistics
+- [x] Habit completion calendar view
+- [x] Link habits to goals
+- [x] Habit detail screen

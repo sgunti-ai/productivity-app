@@ -22,6 +22,7 @@ const MAPPING = {
   "calendar": "calendar-today",
   "target": "track-changes",
   "gearshape.fill": "settings",
+  "repeat.circle.fill": "repeat",
 } as IconMapping;
 
 /**

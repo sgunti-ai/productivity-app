@@ -1,9 +1,11 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
-import { Task, Goal, getTasks, getGoals, saveTask, deleteTask, saveGoal, deleteGoal, updateGoalProgress } from "./storage";
+import { Task, Goal, Habit, StreakData, getTasks, getGoals, getHabits, getStreaks, saveTask, deleteTask, saveGoal, deleteGoal, updateGoalProgress, saveHabit, deleteHabit, updateStreakData, getStreakData } from "./storage";
 
 interface AppState {
   tasks: Task[];
   goals: Goal[];
+  habits: Habit[];
+  streaks: StreakData[];
   loading: boolean;
   error: string | null;
 }
@@ -11,18 +13,26 @@ interface AppState {
 type AppAction =
   | { type: "SET_TASKS"; payload: Task[] }
   | { type: "SET_GOALS"; payload: Goal[] }
+  | { type: "SET_HABITS"; payload: Habit[] }
+  | { type: "SET_STREAKS"; payload: StreakData[] }
   | { type: "ADD_TASK"; payload: Task }
   | { type: "UPDATE_TASK"; payload: Task }
   | { type: "DELETE_TASK"; payload: string }
   | { type: "ADD_GOAL"; payload: Goal }
   | { type: "UPDATE_GOAL"; payload: Goal }
   | { type: "DELETE_GOAL"; payload: string }
+  | { type: "ADD_HABIT"; payload: Habit }
+  | { type: "UPDATE_HABIT"; payload: Habit }
+  | { type: "DELETE_HABIT"; payload: string }
+  | { type: "UPDATE_STREAK"; payload: StreakData }
   | { type: "SET_LOADING"; payload: boolean }
   | { type: "SET_ERROR"; payload: string | null };
 
 const initialState: AppState = {
   tasks: [],
   goals: [],
+  habits: [],
+  streaks: [],
   loading: true,
   error: null,
 };
@@ -33,6 +43,10 @@ function appReducer(state: AppState, action: AppAction): AppState {
       return { ...state, tasks: action.payload };
     case "SET_GOALS":
       return { ...state, goals: action.payload };
+    case "SET_HABITS":
+      return { ...state, habits: action.payload };
+    case "SET_STREAKS":
+      return { ...state, streaks: action.payload };
     case "ADD_TASK":
       return { ...state, tasks: [...state.tasks, action.payload] };
     case "UPDATE_TASK":
@@ -51,6 +65,27 @@ function appReducer(state: AppState, action: AppAction): AppState {
       };
     case "DELETE_GOAL":
       return { ...state, goals: state.goals.filter((g) => g.id !== action.payload) };
+    case "ADD_HABIT":
+      return { ...state, habits: [...state.habits, action.payload] };
+    case "UPDATE_HABIT":
+      return {
+        ...state,
+        habits: state.habits.map((h) => (h.id === action.payload.id ? action.payload : h)),
+      };
+    case "DELETE_HABIT":
+      return { ...state, habits: state.habits.filter((h) => h.id !== action.payload) };
+    case "UPDATE_STREAK":
+      return {
+        ...state,
+        streaks: state.streaks.some((s) => s.taskId === action.payload.taskId || s.habitId === action.payload.habitId)
+          ? state.streaks.map((s) => {
+              if (s.taskId === action.payload.taskId || s.habitId === action.payload.habitId) {
+                return action.payload;
+              }
+              return s;
+            })
+          : [...state.streaks, action.payload],
+      };
     case "SET_LOADING":
       return { ...state, loading: action.payload };
     case "SET_ERROR":
@@ -68,6 +103,10 @@ interface AppContextType {
   addGoal: (goal: Goal) => Promise<void>;
   updateGoal: (goal: Goal) => Promise<void>;
   deleteGoal: (goalId: string) => Promise<void>;
+  addHabit: (habit: Habit) => Promise<void>;
+  updateHabit: (habit: Habit) => Promise<void>;
+  deleteHabit: (habitId: string) => Promise<void>;
+  completeHabitToday: (habitId: string) => Promise<void>;
   refreshData: () => Promise<void>;
 }
 
@@ -81,9 +120,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const loadData = async () => {
       try {
         dispatch({ type: "SET_LOADING", payload: true });
-        const [tasksData, goalsData] = await Promise.all([getTasks(), getGoals()]);
+        const [tasksData, goalsData, habitsData, streaksData] = await Promise.all([
+          getTasks(),
+          getGoals(),
+          getHabits(),
+          getStreaks(),
+        ]);
         dispatch({ type: "SET_TASKS", payload: tasksData });
         dispatch({ type: "SET_GOALS", payload: goalsData });
+        dispatch({ type: "SET_HABITS", payload: habitsData });
+        dispatch({ type: "SET_STREAKS", payload: streaksData });
       } catch (error) {
         dispatch({ type: "SET_ERROR", payload: "Failed to load data" });
       } finally {
@@ -99,7 +145,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await saveTask(task);
       dispatch({ type: "ADD_TASK", payload: task });
 
-      // Update goal progress if task is linked to a goal
       if (task.goalId) {
         await updateGoalProgress(task.goalId);
       }
@@ -113,9 +158,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await saveTask(task);
       dispatch({ type: "UPDATE_TASK", payload: task });
 
-      // Update goal progress if task is linked to a goal
       if (task.goalId) {
         await updateGoalProgress(task.goalId);
+      }
+
+      // Update streak if task is completed
+      if (task.completed) {
+        const streak = await updateStreakData(task.id, false);
+        if (streak) {
+          dispatch({ type: "UPDATE_STREAK", payload: streak });
+        }
       }
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: "Failed to update task" });
@@ -128,7 +180,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
       await deleteTask(taskId);
       dispatch({ type: "DELETE_TASK", payload: taskId });
 
-      // Update goal progress if task was linked to a goal
       if (task?.goalId) {
         await updateGoalProgress(task.goalId);
       }
@@ -164,12 +215,65 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const addHabit = async (habit: Habit) => {
+    try {
+      await saveHabit(habit);
+      dispatch({ type: "ADD_HABIT", payload: habit });
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Failed to add habit" });
+    }
+  };
+
+  const updateHabit = async (habit: Habit) => {
+    try {
+      await saveHabit(habit);
+      dispatch({ type: "UPDATE_HABIT", payload: habit });
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Failed to update habit" });
+    }
+  };
+
+  const deleteHabitHandler = async (habitId: string) => {
+    try {
+      await deleteHabit(habitId);
+      dispatch({ type: "DELETE_HABIT", payload: habitId });
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Failed to delete habit" });
+    }
+  };
+
+  const completeHabitToday = async (habitId: string) => {
+    try {
+      const habit = state.habits.find((h) => h.id === habitId);
+      if (habit) {
+        const today = new Date().toISOString().split("T")[0];
+        if (!habit.completedDates.includes(today)) {
+          const updated = { ...habit, completedDates: [...habit.completedDates, today] };
+          await updateHabit(updated);
+          const streak = await updateStreakData(habitId, true);
+          if (streak) {
+            dispatch({ type: "UPDATE_STREAK", payload: streak });
+          }
+        }
+      }
+    } catch (error) {
+      dispatch({ type: "SET_ERROR", payload: "Failed to complete habit" });
+    }
+  };
+
   const refreshData = async () => {
     try {
       dispatch({ type: "SET_LOADING", payload: true });
-      const [tasksData, goalsData] = await Promise.all([getTasks(), getGoals()]);
+      const [tasksData, goalsData, habitsData, streaksData] = await Promise.all([
+        getTasks(),
+        getGoals(),
+        getHabits(),
+        getStreaks(),
+      ]);
       dispatch({ type: "SET_TASKS", payload: tasksData });
       dispatch({ type: "SET_GOALS", payload: goalsData });
+      dispatch({ type: "SET_HABITS", payload: habitsData });
+      dispatch({ type: "SET_STREAKS", payload: streaksData });
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: "Failed to refresh data" });
     } finally {
@@ -185,6 +289,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     addGoal,
     updateGoal,
     deleteGoal: deleteGoalHandler,
+    addHabit,
+    updateHabit,
+    deleteHabit: deleteHabitHandler,
+    completeHabitToday,
     refreshData,
   };
 
