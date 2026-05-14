@@ -23,6 +23,8 @@ const MAPPING = {
   "target": "track-changes",
   "gearshape.fill": "settings",
   "repeat.circle.fill": "repeat",
+  "person.fill": "person",
+  "chart.bar.fill": "bar-chart",
 } as IconMapping;
 
 /**

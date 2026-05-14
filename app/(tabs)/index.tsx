@@ -1,13 +1,15 @@
-import { ScrollView, View, Text, Pressable, FlatList } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, FlatList } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useApp } from "@/lib/app-context";
 import { useColors } from "@/hooks/use-colors";
+import { useAuth } from "@/lib/auth-context";
 import { getTodayDate, getNextDays, formatDate } from "@/lib/storage";
 import { useState, useEffect } from "react";
 
 export default function HomeScreen() {
   const colors = useColors();
   const { state } = useApp();
+  const { state: authState } = useAuth();
   const [completedToday, setCompletedToday] = useState(0);
 
   useEffect(() => {
@@ -31,7 +33,7 @@ export default function HomeScreen() {
         {/* Header */}
         <View style={{ marginBottom: 24 }}>
           <Text style={{ fontSize: 32, fontWeight: "bold", color: colors.foreground }}>
-            Welcome Back
+            Welcome Back, {authState.user?.name?.split(" ")[0]}!
           </Text>
           <Text style={{ fontSize: 14, color: colors.muted, marginTop: 4 }}>
             {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
