@@ -24,7 +24,7 @@ export default function SignupScreen() {
 
     try {
       await signup(name, email, password);
-      router.replace("/(tabs)");
+      router.replace("/drawer-layout");
     } catch (error) {
       Alert.alert("Signup Failed", state.error || "Please try again");
     }

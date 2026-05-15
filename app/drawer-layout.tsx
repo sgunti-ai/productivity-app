@@ -42,7 +42,7 @@ export default function DrawerLayout() {
             ),
             headerRight: () => (
               <Pressable
-                onPress={() => router.push("/(tabs)/profile")}
+                onPress={() => router.push("/(drawer-tabs)/profile")}
                 style={({ pressed }) => ({
                   paddingHorizontal: 12,
                   paddingVertical: 8,

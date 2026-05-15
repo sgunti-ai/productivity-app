@@ -59,14 +59,14 @@ export function DrawerNavigation({ isOpen, onClose }: DrawerNavigationProps) {
   }, [isOpen, slideAnim, fadeAnim]);
 
   const menuItems: DrawerItem[] = [
-    { label: "Home", icon: "home", route: "/(tabs)" },
-    { label: "Tasks", icon: "checklist", route: "/(tabs)/tasks" },
-    { label: "Calendar", icon: "calendar-today", route: "/(tabs)/calendar" },
-    { label: "Goals", icon: "track-changes", route: "/(tabs)/goals" },
-    { label: "Habits", icon: "repeat", route: "/(tabs)/habits" },
-    { label: "Analytics", icon: "bar-chart", route: "/(tabs)/analytics" },
-    { label: "Profile", icon: "person", route: "/(tabs)/profile" },
-    { label: "Settings", icon: "settings", route: "/(tabs)/settings" },
+    { label: "Home", icon: "home", route: "/(drawer-tabs)" },
+    { label: "Tasks", icon: "checklist", route: "/(drawer-tabs)/tasks" },
+    { label: "Calendar", icon: "calendar-today", route: "/(drawer-tabs)/calendar" },
+    { label: "Goals", icon: "track-changes", route: "/(drawer-tabs)/goals" },
+    { label: "Habits", icon: "repeat", route: "/(drawer-tabs)/habits" },
+    { label: "Analytics", icon: "bar-chart", route: "/(drawer-tabs)/analytics" },
+    { label: "Profile", icon: "person", route: "/(drawer-tabs)/profile" },
+    { label: "Settings", icon: "settings", route: "/(drawer-tabs)/settings" },
   ];
 
   const handleNavigate = (route: string) => {
