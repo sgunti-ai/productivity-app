@@ -12,7 +12,7 @@ export default function RootIndex() {
   useEffect(() => {
     if (!state.isLoading) {
       if (state.isAuthenticated) {
-        router.replace("/drawer-layout");
+        router.replace("/drawer-layout/(drawer-tabs)" as any);
       } else {
         router.replace("/auth/login");
       }
