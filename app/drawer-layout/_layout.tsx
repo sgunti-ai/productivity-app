@@ -46,7 +46,7 @@ export default function DrawerLayoutWrapper() {
           </View>
 
           <Pressable
-            onPress={() => router.push("/(drawer-tabs)/profile")}
+            onPress={() => router.push("/drawer-layout/(drawer-tabs)/profile")}
             style={({ pressed }) => ({
               paddingHorizontal: 12,
               paddingVertical: 8,
@@ -75,7 +75,7 @@ export default function DrawerLayoutWrapper() {
               headerShown: false,
             }}
           >
-            <Stack.Screen name="(drawer-tabs)" />
+            <Stack.Screen name="(drawer-tabs)" options={{ headerShown: false }} />
           </Stack>
         </View>
       </View>
