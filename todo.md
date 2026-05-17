@@ -155,3 +155,13 @@
 - [x] Hamburger menu button in header
 - [x] Smooth drawer slide animation
 - [x] Responsive drawer width for different screen sizes
+
+
+## Phase 5: Sample Data & Demo
+
+### Sample Data
+- [x] Add sample tasks with different priorities and dates
+- [x] Add sample goals with progress tracking
+- [x] Add sample habits with completion history
+- [x] Populate calendar with task events
+- [x] Generate analytics data for visualization

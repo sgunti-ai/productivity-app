@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
 import { Task, Goal, Habit, StreakData, getTasks, getGoals, getHabits, getStreaks, saveTask, deleteTask, saveGoal, deleteGoal, updateGoalProgress, saveHabit, deleteHabit, updateStreakData, getStreakData } from "./storage";
+import { SAMPLE_TASKS, SAMPLE_GOALS, SAMPLE_HABITS } from "./sample-data";
 
 interface AppState {
   tasks: Task[];
@@ -120,12 +121,32 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const loadData = async () => {
       try {
         dispatch({ type: "SET_LOADING", payload: true });
-        const [tasksData, goalsData, habitsData, streaksData] = await Promise.all([
+        let [tasksData, goalsData, habitsData, streaksData] = await Promise.all([
           getTasks(),
           getGoals(),
           getHabits(),
           getStreaks(),
         ]);
+
+        // Load sample data if no data exists
+        if (tasksData.length === 0 && goalsData.length === 0 && habitsData.length === 0) {
+          for (const task of SAMPLE_TASKS) {
+            await saveTask(task);
+          }
+          for (const goal of SAMPLE_GOALS) {
+            await saveGoal(goal);
+          }
+          for (const habit of SAMPLE_HABITS) {
+            await saveHabit(habit);
+          }
+          [tasksData, goalsData, habitsData, streaksData] = await Promise.all([
+            getTasks(),
+            getGoals(),
+            getHabits(),
+            getStreaks(),
+          ]);
+        }
+
         dispatch({ type: "SET_TASKS", payload: tasksData });
         dispatch({ type: "SET_GOALS", payload: goalsData });
         dispatch({ type: "SET_HABITS", payload: habitsData });
