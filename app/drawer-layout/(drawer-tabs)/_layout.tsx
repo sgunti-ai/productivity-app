@@ -15,6 +15,7 @@ export default function DrawerTabsLayout() {
       <Stack.Screen name="analytics" />
       <Stack.Screen name="profile" />
       <Stack.Screen name="settings" />
+      <Stack.Screen name="search" />
       <Stack.Screen name="task-modal" options={{ presentation: "modal" }} />
       <Stack.Screen name="goal-modal" options={{ presentation: "modal" }} />
       <Stack.Screen name="habit-modal" options={{ presentation: "modal" }} />

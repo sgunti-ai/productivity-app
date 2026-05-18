@@ -174,3 +174,30 @@
 - [x] Issue 2: Date picker and time picker not displaying in task creation
 - [x] Issue 3: Calendar not displaying tasks for selected dates (date formatting verified)
 - [x] Issue 4: Goals cannot be opened for editing
+
+
+## Phase 6: Advanced Search & Filtering
+
+### Search Functionality
+- [x] Create search screen with cross-app search
+- [x] Search across tasks, goals, and habits
+- [x] Real-time search results as user types
+- [ ] Search history tracking
+- [ ] Clear search history option
+
+### Filtering Capabilities
+- [x] Filter tasks by priority (High, Medium, Low)
+- [x] Filter tasks by category (Personal, Work, Health, Finance, Learning)
+- [x] Filter tasks by completion status (Completed, Incomplete)
+- [x] Filter tasks by date range (Today, This Week, This Month, Custom)
+- [ ] Filter goals by status (Active, Completed, On Hold)
+- [ ] Filter goals by progress range
+- [x] Combine multiple filters
+- [ ] Save filter presets
+
+### UI Components
+- [x] Search bar with search icon
+- [x] Filter panel with toggles and dropdowns
+- [x] Filter chip display showing active filters
+- [x] Clear all filters button
+- [x] Search results display with count

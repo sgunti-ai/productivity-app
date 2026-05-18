@@ -65,6 +65,7 @@ export function DrawerNavigation({ isOpen, onClose }: DrawerNavigationProps) {
     { label: "Goals", icon: "track-changes", route: "/drawer-layout/(drawer-tabs)/goals" },
     { label: "Habits", icon: "repeat", route: "/drawer-layout/(drawer-tabs)/habits" },
     { label: "Analytics", icon: "bar-chart", route: "/drawer-layout/(drawer-tabs)/analytics" },
+    { label: "Search", icon: "search", route: "/drawer-layout/(drawer-tabs)/search" },
     { label: "Profile", icon: "person", route: "/drawer-layout/(drawer-tabs)/profile" },
     { label: "Settings", icon: "settings", route: "/drawer-layout/(drawer-tabs)/settings" },
   ];
