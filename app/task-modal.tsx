@@ -1,10 +1,10 @@
-import { View, Text, TextInput, Pressable, ScrollView, Alert } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useApp } from "@/lib/app-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { generateId, getTodayDate, Task } from "@/lib/storage";
+import { View, Text, TextInput, Pressable, ScrollView, Alert, Modal } from "react-native";
 
 export default function TaskModalScreen() {
   const colors = useColors();
@@ -21,10 +21,14 @@ export default function TaskModalScreen() {
   const [category, setCategory] = useState("Personal");
   const [repeat, setRepeat] = useState<"none" | "daily" | "weekly" | "monthly">("none");
   const [goalId, setGoalId] = useState<string | undefined>(undefined);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
 
   const categories = ["Personal", "Work", "Health", "Finance", "Learning"];
   const priorities: ("high" | "medium" | "low")[] = ["high", "medium", "low"];
   const repeats: ("none" | "daily" | "weekly" | "monthly")[] = ["none", "daily", "weekly", "monthly"];
+  const hours = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+  const minutes = Array.from({ length: 60 }, (_, i) => String(i).padStart(2, "0"));
 
   useEffect(() => {
     if (taskId) {
@@ -73,6 +77,12 @@ export default function TaskModalScreen() {
     } catch (error) {
       Alert.alert("Error", "Failed to save task");
     }
+  };
+
+  const handleDateChange = (offset: number) => {
+    const date = new Date(dueDate);
+    date.setDate(date.getDate() + offset);
+    setDueDate(date.toISOString().split("T")[0]);
   };
 
   const PickerButton = ({
@@ -200,49 +210,190 @@ export default function TaskModalScreen() {
           onSelect={setCategory}
         />
 
-        {/* Due Date */}
+        {/* Due Date Picker */}
         <View style={{ marginBottom: 16 }}>
           <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
             Due Date
           </Text>
-          <TextInput
-            placeholder="YYYY-MM-DD"
-            value={dueDate}
-            onChangeText={setDueDate}
-            style={{
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: colors.border,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              color: colors.foreground,
-              fontSize: 14,
-            }}
-            placeholderTextColor={colors.muted}
-          />
+          <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+            <Pressable
+              onPress={() => handleDateChange(-1)}
+              style={({ pressed }) => ({
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderRadius: 8,
+                backgroundColor: colors.surface,
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <Text style={{ fontSize: 18, color: colors.primary }}>−</Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setShowDatePicker(true)}
+              style={({ pressed }) => ({
+                flex: 1,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: colors.border,
+                backgroundColor: colors.surface,
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <Text style={{ color: colors.foreground, fontSize: 14, textAlign: "center" }}>
+                {new Date(dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => handleDateChange(1)}
+              style={({ pressed }) => ({
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                borderRadius: 8,
+                backgroundColor: colors.surface,
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <Text style={{ fontSize: 18, color: colors.primary }}>+</Text>
+            </Pressable>
+          </View>
         </View>
 
-        {/* Due Time */}
+        {/* Date Picker Modal */}
+        <Modal visible={showDatePicker} transparent animationType="slide">
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+            <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
+                <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.foreground }}>Select Date</Text>
+                <Pressable onPress={() => setShowDatePicker(false)}>
+                  <Text style={{ fontSize: 18, color: colors.primary }}>Done</Text>
+                </Pressable>
+              </View>
+              <ScrollView style={{ maxHeight: 300 }}>
+                {Array.from({ length: 365 }).map((_, i) => {
+                  const date = new Date();
+                  date.setDate(date.getDate() + i);
+                  const dateStr = date.toISOString().split("T")[0];
+                  const isSelected = dateStr === dueDate;
+                  return (
+                    <Pressable
+                      key={i}
+                      onPress={() => {
+                        setDueDate(dateStr);
+                        setShowDatePicker(false);
+                      }}
+                      style={({ pressed }) => ({
+                        paddingHorizontal: 12,
+                        paddingVertical: 12,
+                        borderRadius: 8,
+                        marginBottom: 8,
+                        backgroundColor: isSelected ? colors.primary : colors.surface,
+                        opacity: pressed ? 0.8 : 1,
+                      })}
+                    >
+                      <Text style={{ color: isSelected ? "white" : colors.foreground, fontSize: 14 }}>
+                        {date.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric", year: "numeric" })}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Due Time Picker */}
         <View style={{ marginBottom: 16 }}>
           <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
             Due Time (optional)
           </Text>
-          <TextInput
-            placeholder="HH:mm"
-            value={dueTime}
-            onChangeText={setDueTime}
-            style={{
+          <Pressable
+            onPress={() => setShowTimePicker(true)}
+            style={({ pressed }) => ({
               borderRadius: 8,
               borderWidth: 1,
               borderColor: colors.border,
               paddingHorizontal: 12,
               paddingVertical: 10,
-              color: colors.foreground,
-              fontSize: 14,
-            }}
-            placeholderTextColor={colors.muted}
-          />
+              backgroundColor: colors.surface,
+              opacity: pressed ? 0.8 : 1,
+            })}
+          >
+            <Text style={{ color: dueTime ? colors.foreground : colors.muted, fontSize: 14 }}>
+              {dueTime || "Select time"}
+            </Text>
+          </Pressable>
         </View>
+
+        {/* Time Picker Modal */}
+        <Modal visible={showTimePicker} transparent animationType="slide">
+          <View style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)", justifyContent: "flex-end" }}>
+            <View style={{ backgroundColor: colors.background, borderTopLeftRadius: 16, borderTopRightRadius: 16, padding: 16 }}>
+              <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 16 }}>
+                <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.foreground }}>Select Time</Text>
+                <Pressable onPress={() => setShowTimePicker(false)}>
+                  <Text style={{ fontSize: 18, color: colors.primary }}>Done</Text>
+                </Pressable>
+              </View>
+              <View style={{ flexDirection: "row", gap: 8, justifyContent: "center", marginBottom: 16 }}>
+                <ScrollView style={{ flex: 1, maxHeight: 200 }}>
+                  {hours.map((hour) => (
+                    <Pressable
+                      key={hour}
+                      onPress={() => setDueTime(`${hour}:${dueTime.split(":")[1] || "00"}`)}
+                      style={({ pressed }) => ({
+                        paddingVertical: 8,
+                        paddingHorizontal: 12,
+                        borderRadius: 8,
+                        marginBottom: 4,
+                        backgroundColor: dueTime.startsWith(hour) ? colors.primary : colors.surface,
+                        opacity: pressed ? 0.8 : 1,
+                      })}
+                    >
+                      <Text style={{ color: dueTime.startsWith(hour) ? "white" : colors.foreground, textAlign: "center" }}>
+                        {hour}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+                <Text style={{ fontSize: 18, fontWeight: "bold", color: colors.foreground }}>:</Text>
+                <ScrollView style={{ flex: 1, maxHeight: 200 }}>
+                  {minutes.map((minute) => (
+                    <Pressable
+                      key={minute}
+                      onPress={() => setDueTime(`${dueTime.split(":")[0] || "00"}:${minute}`)}
+                      style={({ pressed }) => ({
+                        paddingVertical: 8,
+                        paddingHorizontal: 12,
+                        borderRadius: 8,
+                        marginBottom: 4,
+                        backgroundColor: dueTime.endsWith(minute) ? colors.primary : colors.surface,
+                        opacity: pressed ? 0.8 : 1,
+                      })}
+                    >
+                      <Text style={{ color: dueTime.endsWith(minute) ? "white" : colors.foreground, textAlign: "center" }}>
+                        {minute}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              </View>
+              <Pressable
+                onPress={() => setDueTime("")}
+                style={({ pressed }) => ({
+                  paddingHorizontal: 12,
+                  paddingVertical: 10,
+                  borderRadius: 8,
+                  backgroundColor: colors.error,
+                  opacity: pressed ? 0.8 : 1,
+                })}
+              >
+                <Text style={{ color: "white", textAlign: "center", fontWeight: "600" }}>Clear Time</Text>
+              </Pressable>
+            </View>
+          </View>
+        </Modal>
 
         {/* Repeat */}
         <PickerButton
@@ -252,39 +403,22 @@ export default function TaskModalScreen() {
           onSelect={(value) => setRepeat(value as "none" | "daily" | "weekly" | "monthly")}
         />
 
-        {/* Action Buttons */}
-        <View style={{ flexDirection: "row", gap: 12, marginTop: 24, marginBottom: 20 }}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => ({
-              flex: 1,
-              paddingVertical: 12,
-              borderRadius: 8,
-              backgroundColor: colors.surface,
-              opacity: pressed ? 0.8 : 1,
-              alignItems: "center",
-            })}
-          >
-            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground }}>
-              Cancel
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={handleSave}
-            style={({ pressed }) => ({
-              flex: 1,
-              paddingVertical: 12,
-              borderRadius: 8,
-              backgroundColor: colors.primary,
-              opacity: pressed ? 0.8 : 1,
-              alignItems: "center",
-            })}
-          >
-            <Text style={{ fontSize: 16, fontWeight: "600", color: "white" }}>
-              {taskId ? "Update" : "Create"}
-            </Text>
-          </Pressable>
-        </View>
+        {/* Save Button */}
+        <Pressable
+          onPress={handleSave}
+          style={({ pressed }) => ({
+            paddingHorizontal: 16,
+            paddingVertical: 12,
+            borderRadius: 8,
+            backgroundColor: colors.primary,
+            opacity: pressed ? 0.8 : 1,
+            marginBottom: 24,
+          })}
+        >
+          <Text style={{ color: "white", textAlign: "center", fontSize: 16, fontWeight: "600" }}>
+            {taskId ? "Update Task" : "Create Task"}
+          </Text>
+        </Pressable>
       </ScrollView>
     </ScreenContainer>
   );

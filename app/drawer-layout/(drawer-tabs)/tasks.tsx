@@ -55,7 +55,7 @@ export default function TasksScreen() {
 
   const renderTaskItem = ({ item }: { item: Task }) => (
     <Pressable
-      onPress={() => handleToggleComplete(item)}
+      onPress={() => router.push({ pathname: "/task-modal", params: { taskId: item.id } })}
       style={({ pressed }) => [
         {
           opacity: pressed ? 0.7 : 1,

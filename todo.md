@@ -165,3 +165,12 @@
 - [x] Add sample habits with completion history
 - [x] Populate calendar with task events
 - [x] Generate analytics data for visualization
+
+
+## Bug Fixes
+
+### Critical Issues
+- [x] Issue 1: Task click deletes instead of opening edit modal
+- [x] Issue 2: Date picker and time picker not displaying in task creation
+- [x] Issue 3: Calendar not displaying tasks for selected dates (date formatting verified)
+- [x] Issue 4: Goals cannot be opened for editing

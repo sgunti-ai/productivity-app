@@ -22,6 +22,7 @@ export default function GoalsScreen() {
 
   const renderGoalItem = ({ item }: { item: typeof state.goals[0] }) => (
     <Pressable
+      onPress={() => router.push({ pathname: "/goal-modal", params: { goalId: item.id } })}
       style={({ pressed }) => ({
         opacity: pressed ? 0.7 : 1,
         marginBottom: 12,
