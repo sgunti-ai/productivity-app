@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
 import { Task, Goal, Habit, StreakData, getTasks, getGoals, getHabits, getStreaks, saveTask, deleteTask, saveGoal, deleteGoal, updateGoalProgress, saveHabit, deleteHabit, updateStreakData, getStreakData } from "./storage";
 import { SAMPLE_TASKS, SAMPLE_GOALS, SAMPLE_HABITS } from "./sample-data";
+import { createNextRecurringTask } from "./recurring-tasks";
 
 interface AppState {
   tasks: Task[];
@@ -188,6 +189,15 @@ export function AppProvider({ children }: { children: ReactNode }) {
         const streak = await updateStreakData(task.id, false);
         if (streak) {
           dispatch({ type: "UPDATE_STREAK", payload: streak });
+        }
+
+        // Create next recurring task if applicable
+        if (task.repeat !== "none") {
+          const nextTask = createNextRecurringTask(task);
+          if (nextTask) {
+            await saveTask(nextTask);
+            dispatch({ type: "ADD_TASK", payload: nextTask });
+          }
         }
       }
     } catch (error) {

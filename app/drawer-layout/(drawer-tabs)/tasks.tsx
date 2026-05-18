@@ -92,7 +92,24 @@ export default function TasksScreen() {
             )}
           </View>
         </View>
-        <View style={{ flexDirection: "row", gap: 8 }}>
+        <View style={{ flexDirection: "row", gap: 8, alignItems: "center" }}>
+          <Pressable
+            onPress={() => handleToggleComplete(item)}
+            style={({ pressed }) => ({
+              opacity: pressed ? 0.6 : 1,
+              padding: 8,
+              width: 24,
+              height: 24,
+              borderRadius: 4,
+              borderWidth: 2,
+              borderColor: item.completed ? colors.success : colors.border,
+              backgroundColor: item.completed ? colors.success : "transparent",
+              justifyContent: "center",
+              alignItems: "center",
+            })}
+          >
+            {item.completed && <Text style={{ color: colors.background, fontSize: 14, fontWeight: "bold" }}>✓</Text>}
+          </Pressable>
           <Pressable
             onPress={() => handleDeleteTask(item.id)}
             style={({ pressed }) => ({
