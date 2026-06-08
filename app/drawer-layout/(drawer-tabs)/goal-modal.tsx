@@ -1,10 +1,11 @@
-import { View, Text, TextInput, Pressable, ScrollView, Alert } from "react-native";
+import { View, Text, TextInput, Pressable, ScrollView, Alert, Modal, FlatList } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useApp } from "@/lib/app-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState, useEffect } from "react";
 import { generateId, getTodayDate, Goal } from "@/lib/storage";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function GoalModalScreen() {
   const colors = useColors();
@@ -18,6 +19,7 @@ export default function GoalModalScreen() {
   const [category, setCategory] = useState("Personal");
   const [deadline, setDeadline] = useState("");
   const [status, setStatus] = useState<"active" | "completed" | "on_hold">("active");
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const categories = ["Personal", "Work", "Health", "Finance", "Learning"];
   const statuses: ("active" | "completed" | "on_hold")[] = ["active", "completed", "on_hold"];
@@ -32,6 +34,8 @@ export default function GoalModalScreen() {
         setDeadline(goal.deadline);
         setStatus(goal.status);
       }
+    } else {
+      setDeadline(getTodayDate());
     }
   }, [goalId, state.goals]);
 
@@ -69,6 +73,21 @@ export default function GoalModalScreen() {
     } catch (error) {
       Alert.alert("Error", "Failed to save goal");
     }
+  };
+
+  // Generate dates for the next 365 days
+  const generateDateList = () => {
+    const dates = [];
+    const today = new Date();
+    for (let i = 0; i < 365; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      dates.push(`${year}-${month}-${day}`);
+    }
+    return dates;
   };
 
   const PickerButton = ({
@@ -114,6 +133,8 @@ export default function GoalModalScreen() {
       </ScrollView>
     </View>
   );
+
+  const dateList = generateDateList();
 
   return (
     <ScreenContainer className="p-4">
@@ -193,21 +214,26 @@ export default function GoalModalScreen() {
           <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
             Deadline *
           </Text>
-          <TextInput
-            placeholder="YYYY-MM-DD"
-            value={deadline}
-            onChangeText={setDeadline}
-            style={{
+          <Pressable
+            onPress={() => setShowDatePicker(true)}
+            style={({ pressed }) => ({
               borderRadius: 8,
               borderWidth: 1,
               borderColor: colors.border,
               paddingHorizontal: 12,
               paddingVertical: 10,
-              color: colors.foreground,
-              fontSize: 14,
-            }}
-            placeholderTextColor={colors.muted}
-          />
+              backgroundColor: colors.surface,
+              opacity: pressed ? 0.8 : 1,
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignItems: "center",
+            })}
+          >
+            <Text style={{ color: deadline ? colors.foreground : colors.muted, fontSize: 14 }}>
+              {deadline || "Tap to select date"}
+            </Text>
+            <MaterialIcons name="calendar-today" size={18} color={colors.primary} />
+          </Pressable>
         </View>
 
         {/* Status */}
@@ -252,6 +278,79 @@ export default function GoalModalScreen() {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Date Picker Modal */}
+      <Modal visible={showDatePicker} transparent animationType="slide">
+        <View style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+          <View
+            style={{
+              flex: 1,
+              backgroundColor: colors.background,
+              marginTop: 100,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              overflow: "hidden",
+            }}
+          >
+            {/* Modal Header */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+              }}
+            >
+              <Text style={{ fontSize: 18, fontWeight: "600", color: colors.foreground }}>
+                Select Deadline
+              </Text>
+              <Pressable
+                onPress={() => setShowDatePicker(false)}
+                style={({ pressed }) => ({
+                  opacity: pressed ? 0.6 : 1,
+                })}
+              >
+                <MaterialIcons name="close" size={24} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            {/* Date List */}
+            <FlatList
+              data={dateList}
+              keyExtractor={(item) => item}
+              renderItem={({ item }) => (
+                <Pressable
+                  onPress={() => {
+                    setDeadline(item);
+                    setShowDatePicker(false);
+                  }}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderBottomWidth: 0.5,
+                    borderBottomColor: colors.border,
+                    backgroundColor: deadline === item ? colors.surface : colors.background,
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text
+                    style={{
+                      fontSize: 16,
+                      color: deadline === item ? colors.primary : colors.foreground,
+                      fontWeight: deadline === item ? "600" : "400",
+                    }}
+                  >
+                    {item}
+                  </Text>
+                </Pressable>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </ScreenContainer>
   );
 }
