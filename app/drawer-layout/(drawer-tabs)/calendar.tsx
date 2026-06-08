@@ -2,11 +2,14 @@ import { ScrollView, View, Text, Pressable, FlatList } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useApp } from "@/lib/app-context";
 import { useColors } from "@/hooks/use-colors";
+import { useRouter } from "expo-router";
 import { useState } from "react";
 import { getTodayDate } from "@/lib/storage";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function CalendarScreen() {
   const colors = useColors();
+  const router = useRouter();
   const { state } = useApp();
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
@@ -33,7 +36,15 @@ export default function CalendarScreen() {
   };
 
   const getTasksForDate = (dateStr: string) => {
-    return state.tasks.filter((task) => task.dueDate === dateStr && !task.completed);
+    return state.tasks.filter((task) => task.dueDate === dateStr);
+  };
+
+  const getGoalsForDate = (dateStr: string) => {
+    return state.goals.filter((goal) => goal.deadline === dateStr);
+  };
+
+  const getHabitsForDate = (dateStr: string) => {
+    return state.habits;
   };
 
   const handlePrevMonth = () => {
@@ -45,6 +56,58 @@ export default function CalendarScreen() {
   };
 
   const tasksForSelectedDate = getTasksForDate(selectedDate);
+  const goalsForSelectedDate = getGoalsForDate(selectedDate);
+  const habitsForSelectedDate = getHabitsForDate(selectedDate);
+
+  const allActivities = [
+    ...tasksForSelectedDate.map((task) => ({ type: "task", data: task })),
+    ...goalsForSelectedDate.map((goal) => ({ type: "goal", data: goal })),
+    ...habitsForSelectedDate.map((habit) => ({ type: "habit", data: habit })),
+  ];
+
+  const handleActivityPress = (type: string, id: string) => {
+    if (type === "task") {
+      router.push({ pathname: "/drawer-layout/task-modal", params: { taskId: id } });
+    } else if (type === "goal") {
+      router.push({ pathname: "/drawer-layout/goal-modal", params: { goalId: id } });
+    } else if (type === "habit") {
+      router.push({ pathname: "/drawer-layout/habit-modal", params: { habitId: id } });
+    }
+  };
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case "task":
+        return "check-circle";
+      case "goal":
+        return "flag";
+      case "habit":
+        return "repeat";
+      default:
+        return "circle";
+    }
+  };
+
+  const getActivityColor = (type: string) => {
+    switch (type) {
+      case "task":
+        return colors.primary;
+      case "goal":
+        return "#8B5CF6";
+      case "habit":
+        return "#06B6D4";
+      default:
+        return colors.muted;
+    }
+  };
+
+  const countActivitiesForDate = (dateStr: string) => {
+    return (
+      getTasksForDate(dateStr).length +
+      getGoalsForDate(dateStr).length +
+      getHabitsForDate(dateStr).length
+    );
+  };
 
   return (
     <ScreenContainer className="p-4">
@@ -121,7 +184,7 @@ export default function CalendarScreen() {
           >
             {calendarDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day, dayIndex) => {
               const dateStr = day ? formatDateString(day) : null;
-              const tasksCount = dateStr ? getTasksForDate(dateStr).length : 0;
+              const activitiesCount = dateStr ? countActivitiesForDate(dateStr) : 0;
               const isSelected = dateStr === selectedDate;
               const isToday = dateStr === getTodayDate();
 
@@ -157,7 +220,7 @@ export default function CalendarScreen() {
                       >
                         {day}
                       </Text>
-                      {tasksCount > 0 && (
+                      {activitiesCount > 0 && (
                         <View
                           style={{
                             marginTop: 2,
@@ -177,55 +240,74 @@ export default function CalendarScreen() {
         ))}
       </View>
 
-      {/* Selected Date Tasks */}
-      <View
-        style={{
-          paddingTop: 16,
-          borderTopWidth: 1,
-          borderTopColor: colors.border,
-        }}
-      >
-        <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>
-          Tasks for {new Date(selectedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-        </Text>
+      {/* Selected Date Activities */}
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View
+          style={{
+            paddingTop: 16,
+            borderTopWidth: 1,
+            borderTopColor: colors.border,
+            marginBottom: 20,
+          }}
+        >
+          <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>
+            Activities for {new Date(selectedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          </Text>
 
-        <FlatList
-          data={tasksForSelectedDate}
-          renderItem={({ item }) => (
-            <View
-              style={{
-                padding: 12,
-                marginBottom: 8,
-                borderRadius: 8,
-                backgroundColor: colors.surface,
-                borderLeftWidth: 4,
-                borderLeftColor:
-                  item.priority === "high"
-                    ? "#EF4444"
-                    : item.priority === "medium"
-                      ? "#F59E0B"
-                      : "#22C55E",
-              }}
-            >
-              <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>
-                {item.title}
+          <FlatList
+            data={allActivities}
+            renderItem={({ item }) => (
+              <Pressable
+                onPress={() => handleActivityPress(item.type, item.data.id)}
+                style={({ pressed }) => ({
+                  padding: 12,
+                  marginBottom: 8,
+                  borderRadius: 8,
+                  backgroundColor: colors.surface,
+                  borderLeftWidth: 4,
+                  borderLeftColor: getActivityColor(item.type),
+                  opacity: pressed ? 0.7 : 1,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                })}
+              >
+                  <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                    <MaterialIcons name={getActivityIcon(item.type)} size={20} color={getActivityColor(item.type)} />
+                    <View style={{ flex: 1 }}>
+                      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>
+                        {item.data.title}
+                      </Text>
+                      {item.type === "task" && (item.data as any).dueTime && (
+                        <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
+                          {(item.data as any).dueTime}
+                        </Text>
+                      )}
+                      {item.type === "goal" && (
+                        <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
+                          Goal • {(item.data as any).category}
+                        </Text>
+                      )}
+                      {item.type === "habit" && (
+                        <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
+                          Habit • {(item.data as any).frequency}
+                        </Text>
+                      )}
+                    </View>
+                  </View>
+                <MaterialIcons name="chevron-right" size={20} color={colors.muted} />
+              </Pressable>
+            )}
+            keyExtractor={(item, index) => `${item.type}-${item.data.id}-${index}`}
+            scrollEnabled={false}
+            ListEmptyComponent={
+              <Text style={{ color: colors.muted, fontSize: 14, textAlign: "center", paddingVertical: 20 }}>
+                No activities scheduled for this date
               </Text>
-              {item.dueTime && (
-                <Text style={{ fontSize: 12, color: colors.muted, marginTop: 4 }}>
-                  {item.dueTime}
-                </Text>
-              )}
-            </View>
-          )}
-          keyExtractor={(item) => item.id}
-          scrollEnabled={false}
-          ListEmptyComponent={
-            <Text style={{ color: colors.muted, fontSize: 14, textAlign: "center", paddingVertical: 20 }}>
-              No tasks scheduled for this date
-            </Text>
-          }
-        />
-      </View>
+            }
+          />
+        </View>
+      </ScrollView>
     </ScreenContainer>
   );
 }
