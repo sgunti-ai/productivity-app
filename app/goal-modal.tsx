@@ -193,21 +193,28 @@ export default function GoalModalScreen() {
           <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
             Deadline *
           </Text>
-          <TextInput
-            placeholder="YYYY-MM-DD"
-            value={deadline}
-            onChangeText={setDeadline}
-            style={{
+          <Pressable
+            onPress={() => {
+              const today = new Date();
+              const year = today.getFullYear();
+              const month = String(today.getMonth() + 1).padStart(2, "0");
+              const day = String(today.getDate()).padStart(2, "0");
+              setDeadline(`${year}-${month}-${day}`);
+            }}
+            style={({ pressed }) => ({
               borderRadius: 8,
               borderWidth: 1,
               borderColor: colors.border,
               paddingHorizontal: 12,
               paddingVertical: 10,
-              color: colors.foreground,
-              fontSize: 14,
-            }}
-            placeholderTextColor={colors.muted}
-          />
+              backgroundColor: colors.surface,
+              opacity: pressed ? 0.8 : 1,
+            })}
+          >
+            <Text style={{ color: deadline ? colors.foreground : colors.muted, fontSize: 14 }}>
+              {deadline || "Tap to select date"}
+            </Text>
+          </Pressable>
         </View>
 
         {/* Status */}

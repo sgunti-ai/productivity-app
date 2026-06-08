@@ -174,6 +174,8 @@
 - [x] Issue 2: Date picker and time picker not displaying in task creation
 - [x] Issue 3: Calendar not displaying tasks for selected dates (date formatting verified)
 - [x] Issue 4: Goals cannot be opened for editing
+- [x] Issue 5: Goal deadline showing date picker instead of simple date input
+- [x] Issue 6: AI Assistant screen showing unmatched route error
 
 
 ## Phase 6: Advanced Search & Filtering
