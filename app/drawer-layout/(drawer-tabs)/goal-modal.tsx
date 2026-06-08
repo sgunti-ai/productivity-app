@@ -3,7 +3,7 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useApp } from "@/lib/app-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { generateId, getTodayDate, Goal } from "@/lib/storage";
 import { MaterialIcons } from "@expo/vector-icons";
 
@@ -75,9 +75,9 @@ export default function GoalModalScreen() {
     }
   };
 
-  // Generate dates for the next 365 days
-  const generateDateList = () => {
-    const dates = [];
+  // Generate dates for the next 365 days - memoized to avoid regeneration
+  const dateList = useMemo(() => {
+    const dates: string[] = [];
     const today = new Date();
     for (let i = 0; i < 365; i++) {
       const date = new Date(today);
@@ -88,7 +88,7 @@ export default function GoalModalScreen() {
       dates.push(`${year}-${month}-${day}`);
     }
     return dates;
-  };
+  }, []);
 
   const PickerButton = ({
     label,
@@ -134,162 +134,161 @@ export default function GoalModalScreen() {
     </View>
   );
 
-  const dateList = generateDateList();
-
   return (
-    <ScreenContainer className="p-4">
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-          <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.foreground }}>
-            {goalId ? "Edit Goal" : "New Goal"}
-          </Text>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => ({
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={{ fontSize: 24, color: colors.foreground }}>✕</Text>
-          </Pressable>
-        </View>
+    <>
+      <ScreenContainer className="p-4">
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+            <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.foreground }}>
+              {goalId ? "Edit Goal" : "New Goal"}
+            </Text>
+            <Pressable
+              onPress={() => router.back()}
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Text style={{ fontSize: 24, color: colors.foreground }}>✕</Text>
+            </Pressable>
+          </View>
 
-        {/* Title */}
-        <View style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
-            Goal Title *
-          </Text>
-          <TextInput
-            placeholder="Enter goal title"
-            value={title}
-            onChangeText={setTitle}
-            style={{
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: colors.border,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              color: colors.foreground,
-              fontSize: 16,
-            }}
-            placeholderTextColor={colors.muted}
+          {/* Title */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
+              Goal Title *
+            </Text>
+            <TextInput
+              placeholder="Enter goal title"
+              value={title}
+              onChangeText={setTitle}
+              style={{
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: colors.border,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                color: colors.foreground,
+                fontSize: 16,
+              }}
+              placeholderTextColor={colors.muted}
+            />
+          </View>
+
+          {/* Description */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
+              Description
+            </Text>
+            <TextInput
+              placeholder="Describe your goal"
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={4}
+              style={{
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: colors.border,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                color: colors.foreground,
+                fontSize: 14,
+                textAlignVertical: "top",
+              }}
+              placeholderTextColor={colors.muted}
+            />
+          </View>
+
+          {/* Category */}
+          <PickerButton
+            label="Category"
+            value={category}
+            options={categories}
+            onSelect={setCategory}
           />
-        </View>
 
-        {/* Description */}
-        <View style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
-            Description
-          </Text>
-          <TextInput
-            placeholder="Describe your goal"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-            style={{
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: colors.border,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              color: colors.foreground,
-              fontSize: 14,
-              textAlignVertical: "top",
-            }}
-            placeholderTextColor={colors.muted}
+          {/* Deadline */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
+              Deadline *
+            </Text>
+            <Pressable
+              onPress={() => setShowDatePicker(true)}
+              style={({ pressed }) => ({
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: colors.border,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                backgroundColor: colors.surface,
+                opacity: pressed ? 0.8 : 1,
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              })}
+            >
+              <Text style={{ color: deadline ? colors.foreground : colors.muted, fontSize: 14 }}>
+                {deadline || "Tap to select date"}
+              </Text>
+              <MaterialIcons name="calendar-today" size={18} color={colors.primary} />
+            </Pressable>
+          </View>
+
+          {/* Status */}
+          <PickerButton
+            label="Status"
+            value={status}
+            options={statuses}
+            onSelect={(value) => setStatus(value as "active" | "completed" | "on_hold")}
           />
-        </View>
 
-        {/* Category */}
-        <PickerButton
-          label="Category"
-          value={category}
-          options={categories}
-          onSelect={setCategory}
-        />
+          {/* Action Buttons */}
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 24, marginBottom: 20 }}>
+            <Pressable
+              onPress={() => router.back()}
+              style={({ pressed }) => ({
+                flex: 1,
+                paddingVertical: 12,
+                borderRadius: 8,
+                backgroundColor: colors.surface,
+                opacity: pressed ? 0.8 : 1,
+                alignItems: "center",
+              })}
+            >
+              <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground }}>
+                Cancel
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleSave}
+              style={({ pressed }) => ({
+                flex: 1,
+                paddingVertical: 12,
+                borderRadius: 8,
+                backgroundColor: colors.primary,
+                opacity: pressed ? 0.8 : 1,
+                alignItems: "center",
+              })}
+            >
+              <Text style={{ fontSize: 16, fontWeight: "600", color: "white" }}>
+                {goalId ? "Update" : "Create"}
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </ScreenContainer>
 
-        {/* Deadline */}
-        <View style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
-            Deadline *
-          </Text>
-          <Pressable
-            onPress={() => setShowDatePicker(true)}
-            style={({ pressed }) => ({
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: colors.border,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              backgroundColor: colors.surface,
-              opacity: pressed ? 0.8 : 1,
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignItems: "center",
-            })}
-          >
-            <Text style={{ color: deadline ? colors.foreground : colors.muted, fontSize: 14 }}>
-              {deadline || "Tap to select date"}
-            </Text>
-            <MaterialIcons name="calendar-today" size={18} color={colors.primary} />
-          </Pressable>
-        </View>
-
-        {/* Status */}
-        <PickerButton
-          label="Status"
-          value={status}
-          options={statuses}
-          onSelect={(value) => setStatus(value as "active" | "completed" | "on_hold")}
-        />
-
-        {/* Action Buttons */}
-        <View style={{ flexDirection: "row", gap: 12, marginTop: 24, marginBottom: 20 }}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => ({
-              flex: 1,
-              paddingVertical: 12,
-              borderRadius: 8,
-              backgroundColor: colors.surface,
-              opacity: pressed ? 0.8 : 1,
-              alignItems: "center",
-            })}
-          >
-            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground }}>
-              Cancel
-            </Text>
-          </Pressable>
-          <Pressable
-            onPress={handleSave}
-            style={({ pressed }) => ({
-              flex: 1,
-              paddingVertical: 12,
-              borderRadius: 8,
-              backgroundColor: colors.primary,
-              opacity: pressed ? 0.8 : 1,
-              alignItems: "center",
-            })}
-          >
-            <Text style={{ fontSize: 16, fontWeight: "600", color: "white" }}>
-              {goalId ? "Update" : "Create"}
-            </Text>
-          </Pressable>
-        </View>
-      </ScrollView>
-
-      {/* Date Picker Modal */}
-      <Modal visible={showDatePicker} transparent animationType="slide">
-        <View style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.5)" }}>
+      {/* Date Picker Modal - rendered outside ScreenContainer */}
+      <Modal visible={showDatePicker} transparent={true} animationType="slide" onRequestClose={() => setShowDatePicker(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.5)", justifyContent: "flex-end" }}>
           <View
             style={{
-              flex: 1,
               backgroundColor: colors.background,
-              marginTop: 100,
               borderTopLeftRadius: 20,
               borderTopRightRadius: 20,
               overflow: "hidden",
+              maxHeight: "80%",
             }}
           >
             {/* Modal Header */}
@@ -351,6 +350,6 @@ export default function GoalModalScreen() {
           </View>
         </View>
       </Modal>
-    </ScreenContainer>
+    </>
   );
 }
