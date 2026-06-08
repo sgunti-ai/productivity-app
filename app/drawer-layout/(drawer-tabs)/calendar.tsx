@@ -111,137 +111,137 @@ export default function CalendarScreen() {
 
   return (
     <ScreenContainer className="p-4">
-      <Text style={{ fontSize: 28, fontWeight: "bold", color: colors.foreground, marginBottom: 16 }}>
-        Calendar
-      </Text>
-
-      {/* Month Navigation */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-between",
-          alignItems: "center",
-          marginBottom: 16,
-        }}
-      >
-        <Pressable
-          onPress={handlePrevMonth}
-          style={({ pressed }) => ({
-            padding: 8,
-            opacity: pressed ? 0.6 : 1,
-          })}
-        >
-          <Text style={{ fontSize: 20, color: colors.primary }}>←</Text>
-        </Pressable>
-        <Text style={{ fontSize: 18, fontWeight: "600", color: colors.foreground }}>
-          {monthName}
-        </Text>
-        <Pressable
-          onPress={handleNextMonth}
-          style={({ pressed }) => ({
-            padding: 8,
-            opacity: pressed ? 0.6 : 1,
-          })}
-        >
-          <Text style={{ fontSize: 20, color: colors.primary }}>→</Text>
-        </Pressable>
-      </View>
-
-      {/* Day Headers */}
-      <View
-        style={{
-          flexDirection: "row",
-          justifyContent: "space-around",
-          marginBottom: 8,
-        }}
-      >
-        {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
-          <Text
-            key={day}
-            style={{
-              width: "14.28%",
-              textAlign: "center",
-              fontWeight: "600",
-              color: colors.muted,
-              fontSize: 12,
-            }}
-          >
-            {day}
-          </Text>
-        ))}
-      </View>
-
-      {/* Calendar Grid */}
-      <View style={{ marginBottom: 24 }}>
-        {Array.from({ length: Math.ceil(calendarDays.length / 7) }).map((_, weekIndex) => (
-          <View
-            key={weekIndex}
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-around",
-              marginBottom: 8,
-            }}
-          >
-            {calendarDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day, dayIndex) => {
-              const dateStr = day ? formatDateString(day) : null;
-              const activitiesCount = dateStr ? countActivitiesForDate(dateStr) : 0;
-              const isSelected = dateStr === selectedDate;
-              const isToday = dateStr === getTodayDate();
-
-              return (
-                <Pressable
-                  key={dayIndex}
-                  onPress={() => dateStr && setSelectedDate(dateStr)}
-                  style={({ pressed }) => ({
-                    width: "14.28%",
-                    aspectRatio: 1,
-                    justifyContent: "center",
-                    alignItems: "center",
-                    borderRadius: 8,
-                    backgroundColor:
-                      isSelected
-                        ? colors.primary
-                        : isToday
-                          ? colors.surface
-                          : "transparent",
-                    opacity: pressed ? 0.8 : 1,
-                    borderWidth: isToday && !isSelected ? 2 : 0,
-                    borderColor: colors.primary,
-                  })}
-                >
-                  {day ? (
-                    <View style={{ alignItems: "center" }}>
-                      <Text
-                        style={{
-                          fontSize: 14,
-                          fontWeight: "600",
-                          color: isSelected ? "white" : colors.foreground,
-                        }}
-                      >
-                        {day}
-                      </Text>
-                      {activitiesCount > 0 && (
-                        <View
-                          style={{
-                            marginTop: 2,
-                            width: 4,
-                            height: 4,
-                            borderRadius: 2,
-                            backgroundColor: isSelected ? "white" : colors.primary,
-                          }}
-                        />
-                      )}
-                    </View>
-                  ) : null}
-                </Pressable>
-              );
-            })}
-          </View>
-        ))}
-      </View>
-
-      {/* Selected Date Activities */}
       <ScrollView showsVerticalScrollIndicator={false}>
+        <Text style={{ fontSize: 28, fontWeight: "bold", color: colors.foreground, marginBottom: 16 }}>
+          Calendar
+        </Text>
+
+        {/* Month Navigation */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-between",
+            alignItems: "center",
+            marginBottom: 16,
+          }}
+        >
+          <Pressable
+            onPress={handlePrevMonth}
+            style={({ pressed }) => ({
+              padding: 8,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={{ fontSize: 20, color: colors.primary }}>←</Text>
+          </Pressable>
+          <Text style={{ fontSize: 18, fontWeight: "600", color: colors.foreground }}>
+            {monthName}
+          </Text>
+          <Pressable
+            onPress={handleNextMonth}
+            style={({ pressed }) => ({
+              padding: 8,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <Text style={{ fontSize: 20, color: colors.primary }}>→</Text>
+          </Pressable>
+        </View>
+
+        {/* Day Headers */}
+        <View
+          style={{
+            flexDirection: "row",
+            justifyContent: "space-around",
+            marginBottom: 8,
+          }}
+        >
+          {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
+            <Text
+              key={day}
+              style={{
+                width: "14.28%",
+                textAlign: "center",
+                fontWeight: "600",
+                color: colors.muted,
+                fontSize: 12,
+              }}
+            >
+              {day}
+            </Text>
+          ))}
+        </View>
+
+        {/* Calendar Grid */}
+        <View style={{ marginBottom: 24 }}>
+          {Array.from({ length: Math.ceil(calendarDays.length / 7) }).map((_, weekIndex) => (
+            <View
+              key={weekIndex}
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-around",
+                marginBottom: 8,
+              }}
+            >
+              {calendarDays.slice(weekIndex * 7, (weekIndex + 1) * 7).map((day, dayIndex) => {
+                const dateStr = day ? formatDateString(day) : null;
+                const activitiesCount = dateStr ? countActivitiesForDate(dateStr) : 0;
+                const isSelected = dateStr === selectedDate;
+                const isToday = dateStr === getTodayDate();
+
+                return (
+                  <Pressable
+                    key={dayIndex}
+                    onPress={() => dateStr && setSelectedDate(dateStr)}
+                    style={({ pressed }) => ({
+                      width: "14.28%",
+                      aspectRatio: 1,
+                      justifyContent: "center",
+                      alignItems: "center",
+                      borderRadius: 8,
+                      backgroundColor:
+                        isSelected
+                          ? colors.primary
+                          : isToday
+                            ? colors.surface
+                            : "transparent",
+                      opacity: pressed ? 0.8 : 1,
+                      borderWidth: isToday && !isSelected ? 2 : 0,
+                      borderColor: colors.primary,
+                    })}
+                  >
+                    {day ? (
+                      <View style={{ alignItems: "center" }}>
+                        <Text
+                          style={{
+                            fontSize: 14,
+                            fontWeight: "600",
+                            color: isSelected ? "white" : colors.foreground,
+                          }}
+                        >
+                          {day}
+                        </Text>
+                        {activitiesCount > 0 && (
+                          <View
+                            style={{
+                              marginTop: 2,
+                              width: 4,
+                              height: 4,
+                              borderRadius: 2,
+                              backgroundColor: isSelected ? "white" : colors.primary,
+                            }}
+                          />
+                        )}
+                      </View>
+                    ) : null}
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
+        </View>
+
+        {/* Selected Date Activities */}
         <View
           style={{
             paddingTop: 16,
@@ -254,10 +254,10 @@ export default function CalendarScreen() {
             Activities for {new Date(selectedDate).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
           </Text>
 
-          <FlatList
-            data={allActivities}
-            renderItem={({ item }) => (
+          {allActivities.length > 0 ? (
+            allActivities.map((item, index) => (
               <Pressable
+                key={`${item.type}-${item.data.id}-${index}`}
                 onPress={() => handleActivityPress(item.type, item.data.id)}
                 style={({ pressed }) => ({
                   padding: 12,
@@ -272,40 +272,37 @@ export default function CalendarScreen() {
                   justifyContent: "space-between",
                 })}
               >
-                  <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
-                    <MaterialIcons name={getActivityIcon(item.type)} size={20} color={getActivityColor(item.type)} />
-                    <View style={{ flex: 1 }}>
-                      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>
-                        {item.data.title}
+                <View style={{ flex: 1, flexDirection: "row", alignItems: "center", gap: 8 }}>
+                  <MaterialIcons name={getActivityIcon(item.type)} size={20} color={getActivityColor(item.type)} />
+                  <View style={{ flex: 1 }}>
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>
+                      {item.data.title}
+                    </Text>
+                    {item.type === "task" && (item.data as any).dueTime && (
+                      <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
+                        {(item.data as any).dueTime}
                       </Text>
-                      {item.type === "task" && (item.data as any).dueTime && (
-                        <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
-                          {(item.data as any).dueTime}
-                        </Text>
-                      )}
-                      {item.type === "goal" && (
-                        <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
-                          Goal • {(item.data as any).category}
-                        </Text>
-                      )}
-                      {item.type === "habit" && (
-                        <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
-                          Habit • {(item.data as any).frequency}
-                        </Text>
-                      )}
-                    </View>
+                    )}
+                    {item.type === "goal" && (
+                      <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
+                        Goal • {(item.data as any).category}
+                      </Text>
+                    )}
+                    {item.type === "habit" && (
+                      <Text style={{ fontSize: 12, color: colors.muted, marginTop: 2 }}>
+                        Habit • {(item.data as any).frequency}
+                      </Text>
+                    )}
                   </View>
+                </View>
                 <MaterialIcons name="chevron-right" size={20} color={colors.muted} />
               </Pressable>
-            )}
-            keyExtractor={(item, index) => `${item.type}-${item.data.id}-${index}`}
-            scrollEnabled={false}
-            ListEmptyComponent={
-              <Text style={{ color: colors.muted, fontSize: 14, textAlign: "center", paddingVertical: 20 }}>
-                No activities scheduled for this date
-              </Text>
-            }
-          />
+            ))
+          ) : (
+            <Text style={{ color: colors.muted, fontSize: 14, textAlign: "center", paddingVertical: 20 }}>
+              No activities scheduled for this date
+            </Text>
+          )}
         </View>
       </ScrollView>
     </ScreenContainer>
