@@ -223,3 +223,22 @@
 - [ ] Track recurring task history
 - [ ] Optional deadline adjustment for recurring tasks
 - [x] Completion of recurring task creates next instance
+
+
+## Phase 8: AI-Powered Features
+
+### AI Integration
+- [x] Setup AI/LLM integration with server
+- [x] Create AI helper functions for task analysis
+- [x] Implement smart task suggestions
+- [x] Generate productivity insights
+- [x] Goal decomposition into tasks
+- [x] Productivity tips generation
+
+### AI Assistant Screen
+- [x] Create AI assistant UI screen
+- [x] Productivity tips tab
+- [x] Personalized insights tab
+- [x] Goal decomposition interface
+- [x] Real-time AI response handling
+- [x] Loading states and error handling

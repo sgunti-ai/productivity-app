@@ -63,4 +63,8 @@ Thumbs.db
 
 # Webdev artifacts (checkpoint zips, migrations, etc.)
 .webdev/
+<<<<<<< Updated upstream
 .env
+=======
+.project-config.json
+>>>>>>> Stashed changes
