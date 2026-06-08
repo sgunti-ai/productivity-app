@@ -92,7 +92,7 @@ export default function GoalsScreen() {
     <ScreenContainer className="p-4">
       {/* Floating Action Button */}
       <Pressable
-        onPress={() => router.push("/goal-modal")}
+        onPress={() => router.push("/drawer-layout/goal-modal")}
         style={({ pressed }) => ({
           position: "absolute",
           bottom: 24,

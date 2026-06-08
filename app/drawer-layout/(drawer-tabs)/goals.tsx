@@ -22,7 +22,7 @@ export default function GoalsScreen() {
 
   const renderGoalItem = ({ item }: { item: typeof state.goals[0] }) => (
     <Pressable
-      onPress={() => router.push({ pathname: "/goal-modal", params: { goalId: item.id } })}
+      onPress={() => router.push({ pathname: "/drawer-layout/goal-modal", params: { goalId: item.id } })}
       style={({ pressed }) => ({
         opacity: pressed ? 0.7 : 1,
         marginBottom: 12,
@@ -93,7 +93,7 @@ export default function GoalsScreen() {
     <ScreenContainer className="p-4">
       {/* Floating Action Button */}
       <Pressable
-        onPress={() => router.push("/goal-modal")}
+        onPress={() => router.push("/drawer-layout/goal-modal")}
         style={({ pressed }) => ({
           position: "absolute",
           bottom: 24,
