@@ -1,16 +1,21 @@
-import { ScrollView, View, Text, Pressable } from "react-native";
+import { ScrollView, View, Text, Pressable, RefreshControl, Alert } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useApp } from "@/lib/app-context";
 import { useColors } from "@/hooks/use-colors";
 import { useState } from "react";
 import { useRouter } from "expo-router";
 import { getTodayDate } from "@/lib/storage";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function HabitsScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { state, completeHabitToday } = useApp();
+  const { state, completeHabitToday, deleteHabit } = useApp();
   const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+  const [sortBy, setSortBy] = useState<"streak" | "completion" | "title">("streak");
+  const [batchMode, setBatchMode] = useState(false);
+  const [selectedHabits, setSelectedHabits] = useState<Set<string>>(new Set());
 
   const today = getTodayDate();
 
@@ -36,6 +41,51 @@ export default function HabitsScreen() {
     return Math.round((completedInMonth / 30) * 100);
   };
 
+  const sortedHabits = [...state.habits].sort((a, b) => {
+    if (sortBy === "streak") {
+      return getHabitStreak(b.id) - getHabitStreak(a.id);
+    } else if (sortBy === "completion") {
+      return getCompletionPercentage(b.id) - getCompletionPercentage(a.id);
+    } else {
+      return a.title.localeCompare(b.title);
+    }
+  });
+
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    setRefreshing(false);
+  };
+
+  const toggleHabitSelection = (habitId: string) => {
+    setSelectedHabits((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(habitId)) {
+        newSet.delete(habitId);
+      } else {
+        newSet.add(habitId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleBatchDelete = () => {
+    Alert.alert("Delete Habits", `Delete ${selectedHabits.size} habit(s)?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          for (const habitId of selectedHabits) {
+            await deleteHabit(habitId);
+          }
+          setSelectedHabits(new Set());
+          setBatchMode(false);
+        },
+      },
+    ]);
+  };
+
   return (
     <ScreenContainer className="p-4">
       {/* Floating Action Button */}
@@ -58,10 +108,28 @@ export default function HabitsScreen() {
         <Text style={{ fontSize: 28, color: "white" }}>+</Text>
       </Pressable>
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={{ fontSize: 28, fontWeight: "bold", color: colors.foreground, marginBottom: 16 }}>
-          Habits
-        </Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={handleRefresh} tintColor={colors.primary} />}
+      >
+        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <Text style={{ fontSize: 28, fontWeight: "bold", color: colors.foreground }}>
+            Habits
+          </Text>
+          {batchMode && (
+            <Pressable
+              onPress={() => {
+                setBatchMode(false);
+                setSelectedHabits(new Set());
+              }}
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <MaterialIcons name="close" size={24} color={colors.foreground} />
+            </Pressable>
+          )}
+        </View>
 
         {/* Stats */}
         <View
@@ -94,28 +162,121 @@ export default function HabitsScreen() {
           </View>
         </View>
 
+        {/* Sort Options */}
+        <View style={{ marginBottom: 12 }}>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {(["streak", "completion", "title"] as const).map((sort) => (
+              <Pressable
+                key={sort}
+                onPress={() => setSortBy(sort)}
+                style={({ pressed }) => ({
+                  paddingHorizontal: 10,
+                  paddingVertical: 6,
+                  borderRadius: 20,
+                  marginRight: 8,
+                  backgroundColor: sortBy === sort ? colors.primary : colors.surface,
+                  opacity: pressed ? 0.8 : 1,
+                })}
+              >
+                <Text
+                  style={{
+                    color: sortBy === sort ? "white" : colors.foreground,
+                    fontSize: 11,
+                    fontWeight: "600",
+                    textTransform: "capitalize",
+                  }}
+                >
+                  {sort}
+                </Text>
+              </Pressable>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Batch Actions Bar */}
+        {batchMode && selectedHabits.size > 0 && (
+          <View
+            style={{
+              flexDirection: "row",
+              gap: 8,
+              marginBottom: 12,
+              padding: 12,
+              borderRadius: 8,
+              backgroundColor: colors.surface,
+              borderWidth: 1,
+              borderColor: colors.border,
+            }}
+          >
+            <Text style={{ flex: 1, fontSize: 14, fontWeight: "600", color: colors.foreground, alignSelf: "center" }}>
+              {selectedHabits.size} selected
+            </Text>
+            <Pressable
+              onPress={handleBatchDelete}
+              style={({ pressed }) => ({
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                borderRadius: 6,
+                backgroundColor: colors.error,
+                opacity: pressed ? 0.8 : 1,
+              })}
+            >
+              <Text style={{ fontSize: 12, fontWeight: "600", color: "white" }}>Delete</Text>
+            </Pressable>
+          </View>
+        )}
+
         {/* Habits List */}
-        {state.habits.length > 0 ? (
-          state.habits.map((item) => {
+        {sortedHabits.length > 0 ? (
+          sortedHabits.map((item) => {
             const isCompleted = isHabitCompletedToday(item.id);
             const streak = getHabitStreak(item.id);
             const completionPercentage = getCompletionPercentage(item.id);
             const isExpanded = expandedHabitId === item.id;
+            const isSelected = selectedHabits.has(item.id);
 
             return (
               <View key={item.id} style={{ marginBottom: 12 }}>
                 <Pressable
-                  onPress={() => setExpandedHabitId(isExpanded ? null : item.id)}
+                  onLongPress={() => {
+                    setBatchMode(true);
+                    toggleHabitSelection(item.id);
+                  }}
+                  onPress={() => {
+                    if (batchMode) {
+                      toggleHabitSelection(item.id);
+                    } else {
+                      setExpandedHabitId(isExpanded ? null : item.id);
+                    }
+                  }}
                   style={({ pressed }) => ({
                     opacity: pressed ? 0.7 : 1,
                     padding: 12,
                     borderRadius: 8,
-                    backgroundColor: colors.surface,
+                    backgroundColor: isSelected ? colors.primary + "20" : colors.surface,
                     borderLeftWidth: 4,
                     borderLeftColor: item.color,
+                    borderWidth: isSelected ? 1 : 0,
+                    borderColor: isSelected ? colors.primary : colors.surface,
                   })}
                 >
                   <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center" }}>
+                    {batchMode && (
+                      <View
+                        style={{
+                          width: 20,
+                          height: 20,
+                          borderRadius: 4,
+                          borderWidth: 2,
+                          borderColor: isSelected ? colors.primary : colors.border,
+                          backgroundColor: isSelected ? colors.primary : "transparent",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          marginRight: 8,
+                        }}
+                      >
+                        {isSelected && <Text style={{ color: "white", fontSize: 12, fontWeight: "bold" }}>✓</Text>}
+                      </View>
+                    )}
                     <View style={{ flex: 1 }}>
                       <Text
                         style={{
@@ -140,27 +301,29 @@ export default function HabitsScreen() {
                         </Text>
                       </View>
                     </View>
-                    <Pressable
-                      onPress={() => completeHabitToday(item.id)}
-                      style={({ pressed }) => ({
-                        opacity: pressed ? 0.6 : 1,
-                        width: 40,
-                        height: 40,
-                        borderRadius: 20,
-                        backgroundColor: isCompleted ? colors.success : colors.border,
-                        justifyContent: "center",
-                        alignItems: "center",
-                      })}
-                    >
-                      <Text style={{ fontSize: 20, color: isCompleted ? "white" : colors.muted }}>
-                        {isCompleted ? "✓" : "○"}
-                      </Text>
-                    </Pressable>
+                    {!batchMode && (
+                      <Pressable
+                        onPress={() => completeHabitToday(item.id)}
+                        style={({ pressed }) => ({
+                          opacity: pressed ? 0.6 : 1,
+                          width: 40,
+                          height: 40,
+                          borderRadius: 20,
+                          backgroundColor: isCompleted ? colors.success : colors.border,
+                          justifyContent: "center",
+                          alignItems: "center",
+                        })}
+                      >
+                        <Text style={{ fontSize: 20, color: isCompleted ? "white" : colors.muted }}>
+                          {isCompleted ? "✓" : "○"}
+                        </Text>
+                      </Pressable>
+                    )}
                   </View>
                 </Pressable>
 
                 {/* Expanded Details */}
-                {isExpanded && (
+                {isExpanded && !batchMode && (
                   <View
                     style={{
                       marginTop: 8,
@@ -230,6 +393,19 @@ export default function HabitsScreen() {
                         <Text style={{ fontSize: 12, fontWeight: "600", color: "white" }}>Edit</Text>
                       </Pressable>
                       <Pressable
+                        onPress={() => {
+                          Alert.alert("Delete Habit", `Delete "${item.title}"?`, [
+                            { text: "Cancel", style: "cancel" },
+                            {
+                              text: "Delete",
+                              style: "destructive",
+                              onPress: () => {
+                                deleteHabit(item.id);
+                                setExpandedHabitId(null);
+                              },
+                            },
+                          ]);
+                        }}
                         style={({ pressed }) => ({
                           flex: 1,
                           paddingVertical: 8,
