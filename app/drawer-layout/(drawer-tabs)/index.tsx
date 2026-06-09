@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, TouchableOpacity, FlatList, Animated, Pressable } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, FlatList, Animated, Pressable, Modal } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useApp } from "@/lib/app-context";
 import { useColors } from "@/hooks/use-colors";
@@ -14,6 +14,7 @@ export default function HomeScreen() {
   const { state: authState } = useAuth();
   const router = useRouter();
   const [completedToday, setCompletedToday] = useState(0);
+  const [aiExpanded, setAiExpanded] = useState(false);
 
   // Animation values
   const headerOpacity = useRef(new Animated.Value(0)).current;
@@ -21,6 +22,7 @@ export default function HomeScreen() {
   const statsOpacity = useRef(new Animated.Value(0)).current;
   const contentSlide = useRef(new Animated.Value(30)).current;
   const contentOpacity = useRef(new Animated.Value(0)).current;
+  const aiScale = useRef(new Animated.Value(0)).current;
 
   const { handleTouchStart, handleTouchEnd } = useSwipeNavigation({
     onSwipeLeft: () => {
@@ -76,6 +78,13 @@ export default function HomeScreen() {
         }),
       ]),
     ]).start();
+
+    // AI button scale animation
+    Animated.timing(aiScale, {
+      toValue: 1,
+      duration: 600,
+      useNativeDriver: true,
+    }).start();
   }, []);
 
   const today = getTodayDate();
@@ -133,13 +142,33 @@ export default function HomeScreen() {
     </Pressable>
   );
 
+  const AiTab = ({ icon, label, onPress }: any) => (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        paddingHorizontal: 16,
+        paddingVertical: 12,
+        backgroundColor: colors.primary,
+        borderRadius: 12,
+        marginBottom: 10,
+        opacity: pressed ? 0.8 : 1,
+        flexDirection: "row",
+        alignItems: "center",
+        gap: 12,
+      })}
+    >
+      <Text style={{ fontSize: 20 }}>{icon}</Text>
+      <Text style={{ color: "white", fontWeight: "600", fontSize: 14 }}>{label}</Text>
+    </Pressable>
+  );
+
   return (
     <ScreenContainer
       className="p-4"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         {/* Animated Header */}
         <Animated.View
           style={{
@@ -216,10 +245,10 @@ export default function HomeScreen() {
               </View>
             </View>
 
-            <FlatList
-              data={todayTasks.slice(0, 3)}
-              renderItem={({ item }) => (
+            {todayTasks.length > 0 ? (
+              todayTasks.slice(0, 3).map((item) => (
                 <View
+                  key={item.id}
                   style={{
                     padding: 14,
                     marginBottom: 10,
@@ -248,17 +277,14 @@ export default function HomeScreen() {
                     </Text>
                   )}
                 </View>
-              )}
-              keyExtractor={(item) => item.id}
-              scrollEnabled={false}
-              ListEmptyComponent={
-                <View style={{ paddingVertical: 20, alignItems: "center" }}>
-                  <Text style={{ color: colors.muted, fontSize: 14, fontWeight: "500" }}>
-                    ✨ No tasks for today. Great job!
-                  </Text>
-                </View>
-              }
-            />
+              ))
+            ) : (
+              <View style={{ paddingVertical: 20, alignItems: "center" }}>
+                <Text style={{ color: colors.muted, fontSize: 14, fontWeight: "500" }}>
+                  ✨ No tasks for today. Great job!
+                </Text>
+              </View>
+            )}
           </View>
 
           {/* Upcoming Tasks */}
@@ -268,37 +294,33 @@ export default function HomeScreen() {
                 ⏰ Upcoming
               </Text>
 
-              <FlatList
-                data={upcomingTasks.slice(0, 3)}
-                renderItem={({ item }) => (
-                  <View
-                    style={{
-                      padding: 14,
-                      marginBottom: 10,
-                      borderRadius: 12,
-                      backgroundColor: colors.surface,
-                      borderLeftWidth: 3,
-                      borderLeftColor: colors.primary,
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 2,
-                      elevation: 1,
-                    }}
-                  >
-                    <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-                      <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, flex: 1 }}>
-                        {item.title}
-                      </Text>
-                      <Text style={{ fontSize: 12, color: colors.muted, fontWeight: "500" }}>
-                        {formatDate(item.dueDate)}
-                      </Text>
-                    </View>
+              {upcomingTasks.slice(0, 3).map((item) => (
+                <View
+                  key={item.id}
+                  style={{
+                    padding: 14,
+                    marginBottom: 10,
+                    borderRadius: 12,
+                    backgroundColor: colors.surface,
+                    borderLeftWidth: 3,
+                    borderLeftColor: colors.primary,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 2,
+                    elevation: 1,
+                  }}
+                >
+                  <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+                    <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, flex: 1 }}>
+                      {item.title}
+                    </Text>
+                    <Text style={{ fontSize: 12, color: colors.muted, fontWeight: "500" }}>
+                      {formatDate(item.dueDate)}
+                    </Text>
                   </View>
-                )}
-                keyExtractor={(item) => item.id}
-                scrollEnabled={false}
-              />
+                </View>
+              ))}
             </View>
           )}
 
@@ -309,53 +331,49 @@ export default function HomeScreen() {
                 🎯 Active Goals
               </Text>
 
-              <FlatList
-                data={activeGoals.slice(0, 2)}
-                renderItem={({ item }) => (
+              {activeGoals.slice(0, 2).map((item) => (
+                <View
+                  key={item.id}
+                  style={{
+                    padding: 14,
+                    marginBottom: 10,
+                    borderRadius: 12,
+                    backgroundColor: colors.surface,
+                    borderTopWidth: 3,
+                    borderTopColor: colors.primary,
+                    shadowColor: "#000",
+                    shadowOffset: { width: 0, height: 1 },
+                    shadowOpacity: 0.05,
+                    shadowRadius: 2,
+                    elevation: 1,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 10 }}>
+                    {item.title}
+                  </Text>
                   <View
                     style={{
-                      padding: 14,
-                      marginBottom: 10,
-                      borderRadius: 12,
-                      backgroundColor: colors.surface,
-                      borderTopWidth: 3,
-                      borderTopColor: colors.primary,
-                      shadowColor: "#000",
-                      shadowOffset: { width: 0, height: 1 },
-                      shadowOpacity: 0.05,
-                      shadowRadius: 2,
-                      elevation: 1,
+                      height: 8,
+                      borderRadius: 4,
+                      backgroundColor: colors.border,
+                      overflow: "hidden",
+                      marginBottom: 8,
                     }}
                   >
-                    <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 10 }}>
-                      {item.title}
-                    </Text>
                     <View
                       style={{
-                        height: 8,
+                        height: "100%",
+                        width: `${item.progress}%`,
+                        backgroundColor: colors.primary,
                         borderRadius: 4,
-                        backgroundColor: colors.border,
-                        overflow: "hidden",
-                        marginBottom: 8,
                       }}
-                    >
-                      <View
-                        style={{
-                          height: "100%",
-                          width: `${item.progress}%`,
-                          backgroundColor: colors.primary,
-                          borderRadius: 4,
-                        }}
-                      />
-                    </View>
-                    <Text style={{ fontSize: 12, color: colors.muted, fontWeight: "600" }}>
-                      {item.progress}% complete
-                    </Text>
+                    />
                   </View>
-                )}
-                keyExtractor={(item) => item.id}
-                scrollEnabled={false}
-              />
+                  <Text style={{ fontSize: 12, color: colors.muted, fontWeight: "600" }}>
+                    {item.progress}% complete
+                  </Text>
+                </View>
+              ))}
             </View>
           )}
 
@@ -373,6 +391,80 @@ export default function HomeScreen() {
           )}
         </Animated.View>
       </ScrollView>
+
+      {/* AI Assistant Floating Button */}
+      <Animated.View
+        style={{
+          position: "absolute",
+          bottom: 20,
+          right: 20,
+          transform: [{ scale: aiScale }],
+        }}
+      >
+        {aiExpanded && (
+          <View
+            style={{
+              position: "absolute",
+              bottom: 70,
+              right: 0,
+              backgroundColor: colors.background,
+              borderRadius: 16,
+              padding: 12,
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.15,
+              shadowRadius: 8,
+              elevation: 5,
+              minWidth: 200,
+            }}
+          >
+            <AiTab
+              icon="💡"
+              label="Tips"
+              onPress={() => {
+                setAiExpanded(false);
+                router.push("/drawer-layout/(drawer-tabs)/ai-assistant");
+              }}
+            />
+            <AiTab
+              icon="📊"
+              label="Insights"
+              onPress={() => {
+                setAiExpanded(false);
+                router.push("/drawer-layout/(drawer-tabs)/ai-assistant");
+              }}
+            />
+            <AiTab
+              icon="🎯"
+              label="Decompose"
+              onPress={() => {
+                setAiExpanded(false);
+                router.push("/drawer-layout/(drawer-tabs)/ai-assistant");
+              }}
+            />
+          </View>
+        )}
+
+        <Pressable
+          onPress={() => setAiExpanded(!aiExpanded)}
+          style={({ pressed }) => ({
+            width: 60,
+            height: 60,
+            borderRadius: 30,
+            backgroundColor: colors.primary,
+            justifyContent: "center",
+            alignItems: "center",
+            shadowColor: colors.primary,
+            shadowOffset: { width: 0, height: 4 },
+            shadowOpacity: 0.3,
+            shadowRadius: 8,
+            elevation: 5,
+            opacity: pressed ? 0.8 : 1,
+          })}
+        >
+          <Text style={{ fontSize: 28 }}>✨</Text>
+        </Pressable>
+      </Animated.View>
     </ScreenContainer>
   );
 }
