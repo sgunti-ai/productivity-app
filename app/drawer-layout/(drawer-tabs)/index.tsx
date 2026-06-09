@@ -1,4 +1,4 @@
-import { ScrollView, Text, View, TouchableOpacity, FlatList, Animated } from "react-native";
+import { ScrollView, Text, View, TouchableOpacity, FlatList, Animated, Pressable } from "react-native";
 import { ScreenContainer } from "@/components/screen-container";
 import { useApp } from "@/lib/app-context";
 import { useColors } from "@/hooks/use-colors";
@@ -87,9 +87,10 @@ export default function HomeScreen() {
   const totalTasksToday = state.tasks.filter((t) => t.dueDate === today).length;
   const completionRate = totalTasksToday > 0 ? Math.round((completedToday / totalTasksToday) * 100) : 0;
 
-  const StatCard = ({ icon, value, label, color }: any) => (
-    <View
-      style={{
+  const StatCard = ({ icon, value, label, color, onPress }: any) => (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
         flex: 1,
         padding: 16,
         borderRadius: 16,
@@ -100,7 +101,8 @@ export default function HomeScreen() {
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 2,
-      }}
+        opacity: pressed ? 0.7 : 1,
+      })}
     >
       <View
         style={{
@@ -128,7 +130,7 @@ export default function HomeScreen() {
       <Text style={{ fontSize: 11, color: colors.muted, fontWeight: "500" }}>
         {label}
       </Text>
-    </View>
+    </Pressable>
   );
 
   return (
@@ -165,22 +167,25 @@ export default function HomeScreen() {
           }}
         >
           <StatCard
-            icon={completionRate > 0 ? "🎯" : "📋"}
-            value={`${completionRate}%`}
-            label="Today's Progress"
+            icon={todayTasks.length > 0 ? "📋" : "✅"}
+            value={todayTasks.length}
+            label="Due Today"
             color={colors.primary}
+            onPress={() => router.push("/drawer-layout/(drawer-tabs)/tasks")}
           />
           <StatCard
             icon="✅"
             value={completedToday}
             label="Tasks Done"
             color={colors.success}
+            onPress={() => router.push("/drawer-layout/(drawer-tabs)/tasks")}
           />
           <StatCard
             icon="🚀"
             value={activeGoals.length}
             label="Active Goals"
             color={colors.warning}
+            onPress={() => router.push("/drawer-layout/(drawer-tabs)/goals")}
           />
         </Animated.View>
 
