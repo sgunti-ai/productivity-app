@@ -72,14 +72,18 @@ export function DrawerNavigation({ isOpen, onClose }: DrawerNavigationProps) {
   ];
 
   const handleNavigate = (route: string) => {
-    router.push(route as any);
     onClose();
+    setTimeout(() => {
+      router.push(route as any);
+    }, 100);
   };
 
   const handleLogout = async () => {
-    await logout();
-    router.replace("/auth/login");
     onClose();
+    setTimeout(async () => {
+      await logout();
+      router.replace("/auth/login");
+    }, 100);
   };
 
   const isActive = (route: string) => {

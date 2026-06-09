@@ -14,8 +14,7 @@ export default function DrawerLayoutWrapper() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.background }}>
-      <DrawerNavigation isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
-
+      {/* Main Content Container */}
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Header */}
         <View
@@ -28,6 +27,7 @@ export default function DrawerLayoutWrapper() {
             flexDirection: "row",
             justifyContent: "space-between",
             alignItems: "center",
+            zIndex: 5,
           }}
         >
           <Pressable
@@ -46,7 +46,10 @@ export default function DrawerLayoutWrapper() {
           </View>
 
           <Pressable
-            onPress={() => router.push("/drawer-layout/(drawer-tabs)/profile")}
+            onPress={() => {
+              setDrawerOpen(false);
+              router.push("/drawer-layout/(drawer-tabs)/profile");
+            }}
             style={({ pressed }) => ({
               paddingHorizontal: 12,
               paddingVertical: 8,
@@ -78,6 +81,21 @@ export default function DrawerLayoutWrapper() {
             <Stack.Screen name="(drawer-tabs)" options={{ headerShown: false }} />
           </Stack>
         </View>
+      </View>
+
+      {/* Drawer Navigation - Positioned absolutely on top */}
+      <View
+        style={{
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          zIndex: drawerOpen ? 1000 : -1,
+          pointerEvents: drawerOpen ? "auto" : "none",
+        }}
+      >
+        <DrawerNavigation isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
       </View>
     </View>
   );
