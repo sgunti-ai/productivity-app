@@ -6,11 +6,27 @@ import { useState } from "react";
 import { useRouter } from "expo-router";
 import { getTodayDate } from "@/lib/storage";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useSwipeNavigation, getNextScreen } from "@/hooks/use-swipe-navigation";
 
 export default function HabitsScreen() {
   const colors = useColors();
   const router = useRouter();
   const { state, completeHabitToday, deleteHabit } = useApp();
+
+  const { handleTouchStart, handleTouchEnd } = useSwipeNavigation({
+    onSwipeLeft: () => {
+      const nextScreen = getNextScreen("habits", "left");
+      if (nextScreen === "analytics") router.push("/drawer-layout/(drawer-tabs)/analytics");
+      else if (nextScreen === "ai-assistant") router.push("/drawer-layout/(drawer-tabs)/ai-assistant");
+    },
+    onSwipeRight: () => {
+      const prevScreen = getNextScreen("habits", "right");
+      if (prevScreen === "goals") router.push("/drawer-layout/(drawer-tabs)/goals");
+      else if (prevScreen === "calendar") router.push("/drawer-layout/(drawer-tabs)/calendar");
+      else if (prevScreen === "tasks") router.push("/drawer-layout/(drawer-tabs)/tasks");
+      else if (prevScreen === "index") router.push("/drawer-layout/(drawer-tabs)");
+    },
+  });
   const [expandedHabitId, setExpandedHabitId] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const [sortBy, setSortBy] = useState<"streak" | "completion" | "title">("streak");
@@ -87,7 +103,11 @@ export default function HabitsScreen() {
   };
 
   return (
-    <ScreenContainer className="p-4">
+    <ScreenContainer
+      className="p-4"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Floating Action Button */}
       <Pressable
         onPress={() => router.push("/drawer-layout/habit-modal")}

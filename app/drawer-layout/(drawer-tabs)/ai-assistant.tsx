@@ -4,10 +4,28 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useApp } from "@/lib/app-context";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
+import { useSwipeNavigation, getNextScreen } from "@/hooks/use-swipe-navigation";
 
 export default function AIAssistantScreen() {
   const colors = useColors();
+  const router = useRouter();
   const { state } = useApp();
+
+  const { handleTouchStart, handleTouchEnd } = useSwipeNavigation({
+    onSwipeLeft: () => {
+      // No more screens to the left
+    },
+    onSwipeRight: () => {
+      const prevScreen = getNextScreen("ai-assistant", "right");
+      if (prevScreen === "analytics") router.push("/drawer-layout/(drawer-tabs)/analytics");
+      else if (prevScreen === "habits") router.push("/drawer-layout/(drawer-tabs)/habits");
+      else if (prevScreen === "goals") router.push("/drawer-layout/(drawer-tabs)/goals");
+      else if (prevScreen === "calendar") router.push("/drawer-layout/(drawer-tabs)/calendar");
+      else if (prevScreen === "tasks") router.push("/drawer-layout/(drawer-tabs)/tasks");
+      else if (prevScreen === "index") router.push("/drawer-layout/(drawer-tabs)");
+    },
+  });
   const [activeTab, setActiveTab] = useState<"tips" | "insights" | "decompose">("tips");
   const [loading, setLoading] = useState(false);
   const [content, setContent] = useState("");
@@ -137,7 +155,11 @@ export default function AIAssistantScreen() {
   );
 
   return (
-    <ScreenContainer className="p-0">
+    <ScreenContainer
+      className="p-0"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <View style={{ flex: 1, backgroundColor: colors.background }}>
         {/* Tab Navigation */}
         <View

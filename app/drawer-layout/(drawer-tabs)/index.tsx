@@ -5,12 +5,30 @@ import { useColors } from "@/hooks/use-colors";
 import { useAuth } from "@/lib/auth-context";
 import { getTodayDate, getNextDays, formatDate } from "@/lib/storage";
 import { useState, useEffect } from "react";
+import { useSwipeNavigation, getNextScreen } from "@/hooks/use-swipe-navigation";
+import { useRouter } from "expo-router";
 
 export default function HomeScreen() {
   const colors = useColors();
   const { state } = useApp();
   const { state: authState } = useAuth();
+  const router = useRouter();
   const [completedToday, setCompletedToday] = useState(0);
+
+  const { handleTouchStart, handleTouchEnd } = useSwipeNavigation({
+    onSwipeLeft: () => {
+      const nextScreen = getNextScreen("index", "left");
+      if (nextScreen === "tasks") router.push("/drawer-layout/(drawer-tabs)/tasks");
+      else if (nextScreen === "calendar") router.push("/drawer-layout/(drawer-tabs)/calendar");
+      else if (nextScreen === "goals") router.push("/drawer-layout/(drawer-tabs)/goals");
+      else if (nextScreen === "habits") router.push("/drawer-layout/(drawer-tabs)/habits");
+      else if (nextScreen === "analytics") router.push("/drawer-layout/(drawer-tabs)/analytics");
+      else if (nextScreen === "ai-assistant") router.push("/drawer-layout/(drawer-tabs)/ai-assistant");
+    },
+    onSwipeRight: () => {
+      // No previous screen from home
+    },
+  });
 
   useEffect(() => {
     const today = getTodayDate();
@@ -28,7 +46,11 @@ export default function HomeScreen() {
   const completionRate = totalTasksToday > 0 ? Math.round((completedToday / totalTasksToday) * 100) : 0;
 
   return (
-    <ScreenContainer className="p-4">
+    <ScreenContainer
+      className="p-4"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={{ marginBottom: 24 }}>

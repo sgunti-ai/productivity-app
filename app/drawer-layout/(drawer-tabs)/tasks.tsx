@@ -8,6 +8,7 @@ import { Task } from "@/lib/storage";
 import { useFocusEffect, useRouter } from "expo-router";
 import { useCallback } from "react";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useSwipeNavigation, getNextScreen } from "@/hooks/use-swipe-navigation";
 
 const PRIORITY_COLORS = {
   high: "#EF4444",
@@ -25,6 +26,21 @@ export default function TasksScreen() {
   const colors = useColors();
   const router = useRouter();
   const { state, updateTask, deleteTask } = useApp();
+
+  const { handleTouchStart, handleTouchEnd } = useSwipeNavigation({
+    onSwipeLeft: () => {
+      const nextScreen = getNextScreen("tasks", "left");
+      if (nextScreen === "calendar") router.push("/drawer-layout/(drawer-tabs)/calendar");
+      else if (nextScreen === "goals") router.push("/drawer-layout/(drawer-tabs)/goals");
+      else if (nextScreen === "habits") router.push("/drawer-layout/(drawer-tabs)/habits");
+      else if (nextScreen === "analytics") router.push("/drawer-layout/(drawer-tabs)/analytics");
+      else if (nextScreen === "ai-assistant") router.push("/drawer-layout/(drawer-tabs)/ai-assistant");
+    },
+    onSwipeRight: () => {
+      const prevScreen = getNextScreen("tasks", "right");
+      if (prevScreen === "index") router.push("/drawer-layout/(drawer-tabs)");
+    },
+  });
   const [searchQuery, setSearchQuery] = useState("");
   const [filterPriority, setFilterPriority] = useState<"all" | "high" | "medium" | "low">("all");
   const [showCompleted, setShowCompleted] = useState(false);
@@ -129,7 +145,11 @@ export default function TasksScreen() {
   };
 
   return (
-    <ScreenContainer className="p-4">
+    <ScreenContainer
+      className="p-4"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       {/* Floating Action Button */}
       <Pressable
         onPress={() => router.push("/drawer-layout/task-modal")}

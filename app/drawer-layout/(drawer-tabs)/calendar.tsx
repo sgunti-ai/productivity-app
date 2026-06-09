@@ -6,11 +6,27 @@ import { useRouter } from "expo-router";
 import { useState } from "react";
 import { getTodayDate } from "@/lib/storage";
 import { MaterialIcons } from "@expo/vector-icons";
+import { useSwipeNavigation, getNextScreen } from "@/hooks/use-swipe-navigation";
 
 export default function CalendarScreen() {
   const colors = useColors();
   const router = useRouter();
   const { state } = useApp();
+
+  const { handleTouchStart, handleTouchEnd } = useSwipeNavigation({
+    onSwipeLeft: () => {
+      const nextScreen = getNextScreen("calendar", "left");
+      if (nextScreen === "goals") router.push("/drawer-layout/(drawer-tabs)/goals");
+      else if (nextScreen === "habits") router.push("/drawer-layout/(drawer-tabs)/habits");
+      else if (nextScreen === "analytics") router.push("/drawer-layout/(drawer-tabs)/analytics");
+      else if (nextScreen === "ai-assistant") router.push("/drawer-layout/(drawer-tabs)/ai-assistant");
+    },
+    onSwipeRight: () => {
+      const prevScreen = getNextScreen("calendar", "right");
+      if (prevScreen === "tasks") router.push("/drawer-layout/(drawer-tabs)/tasks");
+      else if (prevScreen === "index") router.push("/drawer-layout/(drawer-tabs)");
+    },
+  });
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(getTodayDate());
 
@@ -110,7 +126,11 @@ export default function CalendarScreen() {
   };
 
   return (
-    <ScreenContainer className="p-4">
+    <ScreenContainer
+      className="p-4"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+    >
       <ScrollView showsVerticalScrollIndicator={false}>
         <Text style={{ fontSize: 28, fontWeight: "bold", color: colors.foreground, marginBottom: 16 }}>
           Calendar
