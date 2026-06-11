@@ -63,6 +63,18 @@ export interface StreakData {
 const TASKS_KEY = "@focusflow_tasks";
 const GOALS_KEY = "@focusflow_goals";
 const SETTINGS_KEY = "@focusflow_settings";
+const HABITS_KEY = "@focusflow_habits";
+const STREAKS_KEY = "@focusflow_streaks";
+
+// Clear all data from AsyncStorage (for debugging/reset)
+export async function clearAllData(): Promise<void> {
+  try {
+    await AsyncStorage.multiRemove([TASKS_KEY, GOALS_KEY, HABITS_KEY, STREAKS_KEY, SETTINGS_KEY]);
+    console.log("All data cleared from AsyncStorage");
+  } catch (error) {
+    console.error("Error clearing data:", error);
+  }
+}
 
 // Task Storage Functions
 export async function getTasks(): Promise<Task[]> {
@@ -241,9 +253,6 @@ export function formatDateTime(dateString: string, timeString?: string): string 
   }
   return formatted;
 }
-
-const HABITS_KEY = "@focusflow_habits";
-const STREAKS_KEY = "@focusflow_streaks";
 
 // Habit Storage Functions
 export async function getHabits(): Promise<Habit[]> {

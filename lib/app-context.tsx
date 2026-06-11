@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useReducer, useEffect, ReactNode } from "react";
-import { Task, Goal, Habit, StreakData, getTasks, getGoals, getHabits, getStreaks, saveTask, deleteTask, saveGoal, deleteGoal, updateGoalProgress, saveHabit, deleteHabit, updateStreakData, getStreakData } from "./storage";
+import { Task, Goal, Habit, StreakData, getTasks, getGoals, getHabits, getStreaks, saveTask, deleteTask, saveGoal, deleteGoal, updateGoalProgress, saveHabit, deleteHabit, updateStreakData, getStreakData, clearAllData } from "./storage";
 import { SAMPLE_TASKS, SAMPLE_GOALS, SAMPLE_HABITS } from "./sample-data";
 import { createNextRecurringTask } from "./recurring-tasks";
 
@@ -122,6 +122,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const loadData = async () => {
       try {
         dispatch({ type: "SET_LOADING", payload: true });
+        
+        // Force clear old data and reload sample data
+        await clearAllData();
+        
         let [tasksData, goalsData, habitsData, streaksData] = await Promise.all([
           getTasks(),
           getGoals(),
