@@ -239,9 +239,14 @@ export default function TaskModalScreen() {
                 borderColor: colors.border,
                 backgroundColor: colors.surface,
                 opacity: pressed ? 0.8 : 1,
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "center",
+                gap: 8,
               })}
             >
-              <Text style={{ color: colors.foreground, fontSize: 14, textAlign: "center" }}>
+              <Text style={{ fontSize: 16 }}>📅</Text>
+              <Text style={{ color: colors.foreground, fontSize: 14 }}>
                 {new Date(dueDate).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
               </Text>
             </Pressable>
