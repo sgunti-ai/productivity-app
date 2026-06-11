@@ -49,6 +49,20 @@ export default function DrawerLayoutWrapper() {
           <Pressable
             onPress={() => {
               setDrawerOpen(false);
+              router.push("/drawer-layout/(drawer-tabs)/search");
+            }}
+            style={({ pressed }) => ({
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              opacity: pressed ? 0.6 : 1,
+            })}
+          >
+            <MaterialIcons name="search" size={24} color={colors.foreground} />
+          </Pressable>
+
+          <Pressable
+            onPress={() => {
+              setDrawerOpen(false);
               router.push("/drawer-layout/(drawer-tabs)/profile");
             }}
             style={({ pressed }) => ({
