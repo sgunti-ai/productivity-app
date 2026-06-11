@@ -1,10 +1,12 @@
-import { View, Text, TextInput, Pressable, ScrollView, Alert } from "react-native";
+"use client";
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useApp } from "@/lib/app-context";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { generateId, getTodayDate, Task } from "@/lib/storage";
+import { View, Text, TextInput, Pressable, ScrollView, Alert, Modal } from "react-native";
+import { MaterialIcons } from "@expo/vector-icons";
 
 export default function TaskModalScreen() {
   const colors = useColors();
@@ -21,6 +23,7 @@ export default function TaskModalScreen() {
   const [category, setCategory] = useState("Personal");
   const [repeat, setRepeat] = useState<"none" | "daily" | "weekly" | "monthly">("none");
   const [goalId, setGoalId] = useState<string | undefined>(undefined);
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   const categories = ["Personal", "Work", "Health", "Finance", "Learning"];
   const priorities: ("high" | "medium" | "low")[] = ["high", "medium", "low"];
@@ -75,6 +78,21 @@ export default function TaskModalScreen() {
     }
   };
 
+  // Generate dates for the next 365 days - memoized to avoid regeneration
+  const dateList = useMemo(() => {
+    const dates: string[] = [];
+    const today = new Date();
+    for (let i = 0; i < 365; i++) {
+      const date = new Date(today);
+      date.setDate(date.getDate() + i);
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, "0");
+      const day = String(date.getDate()).padStart(2, "0");
+      dates.push(`${year}-${month}-${day}`);
+    }
+    return dates;
+  }, []);
+
   const PickerButton = ({
     label,
     value,
@@ -120,172 +138,245 @@ export default function TaskModalScreen() {
   );
 
   return (
-    <ScreenContainer className="p-4">
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-          <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.foreground }}>
-            {taskId ? "Edit Task" : "New Task"}
-          </Text>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => ({
-              opacity: pressed ? 0.6 : 1,
-            })}
-          >
-            <Text style={{ fontSize: 24, color: colors.foreground }}>✕</Text>
-          </Pressable>
-        </View>
-
-        {/* Title */}
-        <View style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
-            Task Title *
-          </Text>
-          <TextInput
-            placeholder="Enter task title"
-            value={title}
-            onChangeText={setTitle}
-            style={{
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: colors.border,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              color: colors.foreground,
-              fontSize: 16,
-            }}
-            placeholderTextColor={colors.muted}
-          />
-        </View>
-
-        {/* Description */}
-        <View style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
-            Description
-          </Text>
-          <TextInput
-            placeholder="Add task details (optional)"
-            value={description}
-            onChangeText={setDescription}
-            multiline
-            numberOfLines={4}
-            style={{
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: colors.border,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              color: colors.foreground,
-              fontSize: 14,
-              textAlignVertical: "top",
-            }}
-            placeholderTextColor={colors.muted}
-          />
-        </View>
-
-        {/* Priority */}
-        <PickerButton
-          label="Priority"
-          value={priority}
-          options={priorities}
-          onSelect={(value) => setPriority(value as "high" | "medium" | "low")}
-        />
-
-        {/* Category */}
-        <PickerButton
-          label="Category"
-          value={category}
-          options={categories}
-          onSelect={setCategory}
-        />
-
-        {/* Due Date */}
-        <View style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
-            Due Date
-          </Text>
-          <TextInput
-            placeholder="YYYY-MM-DD"
-            value={dueDate}
-            onChangeText={setDueDate}
-            style={{
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: colors.border,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              color: colors.foreground,
-              fontSize: 14,
-            }}
-            placeholderTextColor={colors.muted}
-          />
-        </View>
-
-        {/* Due Time */}
-        <View style={{ marginBottom: 16 }}>
-          <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
-            Due Time (optional)
-          </Text>
-          <TextInput
-            placeholder="HH:mm"
-            value={dueTime}
-            onChangeText={setDueTime}
-            style={{
-              borderRadius: 8,
-              borderWidth: 1,
-              borderColor: colors.border,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-              color: colors.foreground,
-              fontSize: 14,
-            }}
-            placeholderTextColor={colors.muted}
-          />
-        </View>
-
-        {/* Repeat */}
-        <PickerButton
-          label="Repeat"
-          value={repeat}
-          options={repeats}
-          onSelect={(value) => setRepeat(value as "none" | "daily" | "weekly" | "monthly")}
-        />
-
-        {/* Action Buttons */}
-        <View style={{ flexDirection: "row", gap: 12, marginTop: 24, marginBottom: 20 }}>
-          <Pressable
-            onPress={() => router.back()}
-            style={({ pressed }) => ({
-              flex: 1,
-              paddingVertical: 12,
-              borderRadius: 8,
-              backgroundColor: colors.surface,
-              opacity: pressed ? 0.8 : 1,
-              alignItems: "center",
-            })}
-          >
-            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground }}>
-              Cancel
+    <>
+      <ScreenContainer className="p-4">
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* Header */}
+          <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+            <Text style={{ fontSize: 24, fontWeight: "bold", color: colors.foreground }}>
+              {taskId ? "Edit Task" : "New Task"}
             </Text>
-          </Pressable>
-          <Pressable
-            onPress={handleSave}
-            style={({ pressed }) => ({
-              flex: 1,
-              paddingVertical: 12,
-              borderRadius: 8,
-              backgroundColor: colors.primary,
-              opacity: pressed ? 0.8 : 1,
-              alignItems: "center",
-            })}
-          >
-            <Text style={{ fontSize: 16, fontWeight: "600", color: "white" }}>
-              {taskId ? "Update" : "Create"}
+            <Pressable
+              onPress={() => router.back()}
+              style={({ pressed }) => ({
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Text style={{ fontSize: 24, color: colors.foreground }}>✕</Text>
+            </Pressable>
+          </View>
+
+          {/* Title */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
+              Task Title *
             </Text>
-          </Pressable>
+            <TextInput
+              placeholder="Enter task title"
+              value={title}
+              onChangeText={setTitle}
+              style={{
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: colors.border,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                color: colors.foreground,
+                fontSize: 16,
+              }}
+              placeholderTextColor={colors.muted}
+            />
+          </View>
+
+          {/* Description */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
+              Description
+            </Text>
+            <TextInput
+              placeholder="Add task details (optional)"
+              value={description}
+              onChangeText={setDescription}
+              multiline
+              numberOfLines={4}
+              style={{
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: colors.border,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                color: colors.foreground,
+                fontSize: 14,
+                textAlignVertical: "top",
+              }}
+              placeholderTextColor={colors.muted}
+            />
+          </View>
+
+          {/* Priority */}
+          <PickerButton
+            label="Priority"
+            value={priority}
+            options={priorities}
+            onSelect={(value) => setPriority(value as "high" | "medium" | "low")}
+          />
+
+          {/* Category */}
+          <PickerButton
+            label="Category"
+            value={category}
+            options={categories}
+            onSelect={setCategory}
+          />
+
+          {/* Due Date with Calendar Picker */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
+              Due Date *
+            </Text>
+            <Pressable
+              onPress={() => setShowDatePicker(true)}
+              style={({ pressed }) => ({
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: colors.border,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                backgroundColor: colors.surface,
+                opacity: pressed ? 0.8 : 1,
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+              })}
+            >
+              <Text style={{ color: dueDate ? colors.foreground : colors.muted, fontSize: 14 }}>
+                {dueDate || "Tap to select date"}
+              </Text>
+              <MaterialIcons name="calendar-today" size={18} color={colors.primary} />
+            </Pressable>
+          </View>
+
+          {/* Due Time */}
+          <View style={{ marginBottom: 16 }}>
+            <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
+              Due Time (optional)
+            </Text>
+            <TextInput
+              placeholder="HH:mm"
+              value={dueTime}
+              onChangeText={setDueTime}
+              style={{
+                borderRadius: 8,
+                borderWidth: 1,
+                borderColor: colors.border,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+                color: colors.foreground,
+                fontSize: 14,
+              }}
+              placeholderTextColor={colors.muted}
+            />
+          </View>
+
+          {/* Repeat */}
+          <PickerButton
+            label="Repeat"
+            value={repeat}
+            options={repeats}
+            onSelect={(value) => setRepeat(value as "none" | "daily" | "weekly" | "monthly")}
+          />
+
+          {/* Action Buttons */}
+          <View style={{ flexDirection: "row", gap: 12, marginTop: 24, marginBottom: 20 }}>
+            <Pressable
+              onPress={() => router.back()}
+              style={({ pressed }) => ({
+                flex: 1,
+                paddingVertical: 12,
+                borderRadius: 8,
+                backgroundColor: colors.surface,
+                opacity: pressed ? 0.8 : 1,
+                alignItems: "center",
+              })}
+            >
+              <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground }}>
+                Cancel
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={handleSave}
+              style={({ pressed }) => ({
+                flex: 1,
+                paddingVertical: 12,
+                borderRadius: 8,
+                backgroundColor: colors.primary,
+                opacity: pressed ? 0.8 : 1,
+                alignItems: "center",
+              })}
+            >
+              <Text style={{ fontSize: 16, fontWeight: "600", color: "white" }}>
+                {taskId ? "Update" : "Create"}
+              </Text>
+            </Pressable>
+          </View>
+        </ScrollView>
+      </ScreenContainer>
+
+      {/* Date Picker Modal - rendered outside ScreenContainer */}
+      <Modal visible={showDatePicker} transparent={true} animationType="slide" onRequestClose={() => setShowDatePicker(false)}>
+        <View style={{ flex: 1, backgroundColor: "rgba(0, 0, 0, 0.5)", justifyContent: "flex-end" }}>
+          <View
+            style={{
+              backgroundColor: colors.background,
+              borderTopLeftRadius: 20,
+              borderTopRightRadius: 20,
+              overflow: "hidden",
+              maxHeight: "80%",
+            }}
+          >
+            {/* Modal Header */}
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignItems: "center",
+                paddingHorizontal: 16,
+                paddingVertical: 12,
+                borderBottomWidth: 1,
+                borderBottomColor: colors.border,
+              }}
+            >
+              <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground }}>
+                Select Date
+              </Text>
+              <Pressable onPress={() => setShowDatePicker(false)}>
+                <MaterialIcons name="close" size={24} color={colors.foreground} />
+              </Pressable>
+            </View>
+
+            {/* Date List */}
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {dateList.map((date) => (
+                <Pressable
+                  key={date}
+                  onPress={() => {
+                    setDueDate(date);
+                    setShowDatePicker(false);
+                  }}
+                  style={({ pressed }) => ({
+                    paddingHorizontal: 16,
+                    paddingVertical: 12,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                    backgroundColor: dueDate === date ? colors.primary + "20" : "transparent",
+                    opacity: pressed ? 0.7 : 1,
+                  })}
+                >
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      color: dueDate === date ? colors.primary : colors.foreground,
+                      fontWeight: dueDate === date ? "600" : "400",
+                    }}
+                  >
+                    {date}
+                  </Text>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
         </View>
-      </ScrollView>
-    </ScreenContainer>
+      </Modal>
+    </>
   );
 }
