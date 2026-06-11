@@ -2,9 +2,18 @@ import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import { useApp } from "@/lib/app-context";
 import { useRouter } from "expo-router";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { View, Text, TextInput, Pressable, ScrollView } from "react-native";
 import { MaterialIcons } from "@expo/vector-icons";
+import {
+  recordSearch,
+  getRecentSearches,
+  getTopSearches,
+  getSearchAnalytics,
+  clearSearchHistory,
+  SearchHistory,
+  SearchAnalytics,
+} from "@/lib/search-utils";
 
 export default function SearchScreen() {
   const colors = useColors();
@@ -12,20 +21,80 @@ export default function SearchScreen() {
   const { state } = useApp();
   const [query, setQuery] = useState("");
   const [activeTab, setActiveTab] = useState<"all" | "tasks" | "goals" | "habits">("all");
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [recentSearches, setRecentSearches] = useState<SearchHistory[]>([]);
+  const [topSearches, setTopSearches] = useState<SearchHistory[]>([]);
+  const [analytics, setAnalytics] = useState<SearchAnalytics | null>(null);
 
-  // Global search across all items
+  // Advanced filters state
+  const [filterPriority, setFilterPriority] = useState<string[]>([]);
+  const [filterCategory, setFilterCategory] = useState<string[]>([]);
+  const [filterStatus, setFilterStatus] = useState<string[]>([]);
+  const [filterDateRange, setFilterDateRange] = useState<"all" | "today" | "week" | "month">("all");
+
+  // Load search history and analytics on mount
+  useEffect(() => {
+    loadSearchData();
+  }, []);
+
+  const loadSearchData = async () => {
+    const recent = await getRecentSearches(5);
+    const top = await getTopSearches(5);
+    const analyticsData = await getSearchAnalytics();
+
+    setRecentSearches(recent);
+    setTopSearches(top);
+    setAnalytics(analyticsData);
+  };
+
+  // Global search across all items with advanced filters
   const searchResults = useMemo(() => {
     const lowerQuery = query.toLowerCase();
     if (!query.trim()) {
       return { tasks: [], goals: [], habits: [] };
     }
 
-    const matchedTasks = state.tasks.filter(
-      (t) =>
+    const getDateRange = () => {
+      const today = new Date();
+      const startDate = new Date();
+
+      switch (filterDateRange) {
+        case "today":
+          startDate.setHours(0, 0, 0, 0);
+          break;
+        case "week":
+          startDate.setDate(today.getDate() - 7);
+          break;
+        case "month":
+          startDate.setMonth(today.getMonth() - 1);
+          break;
+        default:
+          return null;
+      }
+
+      return startDate;
+    };
+
+    const dateRange = getDateRange();
+
+    const matchedTasks = state.tasks.filter((t) => {
+      const matchesQuery =
         t.title.toLowerCase().includes(lowerQuery) ||
         t.description?.toLowerCase().includes(lowerQuery) ||
-        t.category.toLowerCase().includes(lowerQuery)
-    );
+        t.category.toLowerCase().includes(lowerQuery);
+
+      const matchesPriority = filterPriority.length === 0 || filterPriority.includes(t.priority);
+      const matchesCategory = filterCategory.length === 0 || filterCategory.includes(t.category);
+      const matchesStatus =
+        filterStatus.length === 0 ||
+        (filterStatus.includes("completed") && t.completed) ||
+        (filterStatus.includes("incomplete") && !t.completed);
+
+      const matchesDate =
+        !dateRange || new Date(t.dueDate) >= dateRange;
+
+      return matchesQuery && matchesPriority && matchesCategory && matchesStatus && matchesDate;
+    });
 
     const matchedGoals = state.goals.filter(
       (g) =>
@@ -40,7 +109,24 @@ export default function SearchScreen() {
     );
 
     return { tasks: matchedTasks, goals: matchedGoals, habits: matchedHabits };
-  }, [query, state.tasks, state.goals, state.habits]);
+  }, [query, state.tasks, state.goals, state.habits, filterPriority, filterCategory, filterStatus, filterDateRange]);
+
+  const handleSearch = async (searchQuery: string) => {
+    setQuery(searchQuery);
+    if (searchQuery.trim()) {
+      await recordSearch(searchQuery);
+      // Reload analytics
+      const analyticsData = await getSearchAnalytics();
+      setAnalytics(analyticsData);
+    }
+  };
+
+  const handleQuickSearch = async (searchQuery: string) => {
+    setQuery(searchQuery);
+    await recordSearch(searchQuery);
+    const analyticsData = await getSearchAnalytics();
+    setAnalytics(analyticsData);
+  };
 
   const totalResults =
     searchResults.tasks.length + searchResults.goals.length + searchResults.habits.length;
@@ -180,6 +266,31 @@ export default function SearchScreen() {
     </Pressable>
   );
 
+  const FilterChip = ({ label, active, onPress }: any) => (
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => ({
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 16,
+        backgroundColor: active ? colors.primary : colors.surface,
+        marginRight: 8,
+        marginBottom: 8,
+        opacity: pressed ? 0.8 : 1,
+      })}
+    >
+      <Text
+        style={{
+          color: active ? "white" : colors.foreground,
+          fontSize: 12,
+          fontWeight: "600",
+        }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+
   const TabButton = ({ label, value }: any) => (
     <Pressable
       onPress={() => setActiveTab(value)}
@@ -229,7 +340,7 @@ export default function SearchScreen() {
             <TextInput
               placeholder="Search tasks, goals, habits..."
               value={query}
-              onChangeText={setQuery}
+              onChangeText={handleSearch}
               style={{
                 flex: 1,
                 paddingVertical: 12,
@@ -244,19 +355,266 @@ export default function SearchScreen() {
               </Pressable>
             )}
           </View>
+
+          {/* Advanced Filters Button */}
+          <Pressable
+            onPress={() => setShowAdvancedFilters(!showAdvancedFilters)}
+            style={({ pressed }) => ({
+              marginTop: 12,
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              borderRadius: 8,
+              backgroundColor: showAdvancedFilters ? colors.primary : colors.surface,
+              opacity: pressed ? 0.8 : 1,
+              flexDirection: "row",
+              alignItems: "center",
+              gap: 8,
+            })}
+          >
+            <MaterialIcons
+              name="tune"
+              size={18}
+              color={showAdvancedFilters ? "white" : colors.foreground}
+            />
+            <Text
+              style={{
+                fontSize: 14,
+                fontWeight: "600",
+                color: showAdvancedFilters ? "white" : colors.foreground,
+              }}
+            >
+              Advanced Filters
+            </Text>
+          </Pressable>
         </View>
 
-        {/* No Query State */}
-        {!query.trim() ? (
-          <View style={{ alignItems: "center", paddingVertical: 60 }}>
-            <Text style={{ fontSize: 48, marginBottom: 16 }}>🔎</Text>
-            <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
-              Start Searching
-            </Text>
-            <Text style={{ fontSize: 14, color: colors.muted, textAlign: "center" }}>
-              Search across all your tasks, goals, and habits
-            </Text>
+        {/* Advanced Filters Panel */}
+        {showAdvancedFilters && (
+          <View
+            style={{
+              marginBottom: 20,
+              padding: 12,
+              borderRadius: 12,
+              backgroundColor: colors.surface,
+            }}
+          >
+            {/* Priority Filter */}
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
+                Priority
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                {["high", "medium", "low"].map((p) => (
+                  <FilterChip
+                    key={p}
+                    label={p.charAt(0).toUpperCase() + p.slice(1)}
+                    active={filterPriority.includes(p)}
+                    onPress={() =>
+                      setFilterPriority(
+                        filterPriority.includes(p)
+                          ? filterPriority.filter((x) => x !== p)
+                          : [...filterPriority, p]
+                      )
+                    }
+                  />
+                ))}
+              </View>
+            </View>
+
+            {/* Category Filter */}
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
+                Category
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                {["Personal", "Work", "Health", "Finance", "Learning"].map((c) => (
+                  <FilterChip
+                    key={c}
+                    label={c}
+                    active={filterCategory.includes(c)}
+                    onPress={() =>
+                      setFilterCategory(
+                        filterCategory.includes(c)
+                          ? filterCategory.filter((x) => x !== c)
+                          : [...filterCategory, c]
+                      )
+                    }
+                  />
+                ))}
+              </View>
+            </View>
+
+            {/* Status Filter */}
+            <View style={{ marginBottom: 16 }}>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
+                Status
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                {["completed", "incomplete"].map((s) => (
+                  <FilterChip
+                    key={s}
+                    label={s === "completed" ? "Completed" : "Incomplete"}
+                    active={filterStatus.includes(s)}
+                    onPress={() =>
+                      setFilterStatus(
+                        filterStatus.includes(s)
+                          ? filterStatus.filter((x) => x !== s)
+                          : [...filterStatus, s]
+                      )
+                    }
+                  />
+                ))}
+              </View>
+            </View>
+
+            {/* Date Range Filter */}
+            <View>
+              <Text style={{ fontSize: 12, fontWeight: "600", color: colors.muted, marginBottom: 8 }}>
+                Date Range
+              </Text>
+              <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                {["all", "today", "week", "month"].map((d) => (
+                  <FilterChip
+                    key={d}
+                    label={d.charAt(0).toUpperCase() + d.slice(1)}
+                    active={filterDateRange === d}
+                    onPress={() => setFilterDateRange(d as any)}
+                  />
+                ))}
+              </View>
+            </View>
           </View>
+        )}
+
+        {/* No Query State - Show Recent & Top Searches */}
+        {!query.trim() ? (
+          <>
+            {/* Analytics Summary */}
+            {analytics && (
+              <View
+                style={{
+                  marginBottom: 20,
+                  padding: 12,
+                  borderRadius: 12,
+                  backgroundColor: colors.surface,
+                  flexDirection: "row",
+                  justifyContent: "space-around",
+                }}
+              >
+                <View style={{ alignItems: "center" }}>
+                  <Text style={{ fontSize: 18, fontWeight: "700", color: colors.primary }}>
+                    {analytics.totalSearches}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.muted, marginTop: 4 }}>Total Searches</Text>
+                </View>
+                <View style={{ alignItems: "center" }}>
+                  <Text style={{ fontSize: 18, fontWeight: "700", color: colors.primary }}>
+                    {analytics.uniqueQueries}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: colors.muted, marginTop: 4 }}>Unique Queries</Text>
+                </View>
+              </View>
+            )}
+
+            {/* Recent Searches */}
+            {recentSearches.length > 0 && (
+              <View style={{ marginBottom: 20 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 12,
+                  }}
+                >
+                  <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground }}>
+                    ⏱️ Recent Searches
+                  </Text>
+                  <Pressable
+                    onPress={async () => {
+                      await clearSearchHistory();
+                      setRecentSearches([]);
+                      setTopSearches([]);
+                      setAnalytics(null);
+                    }}
+                  >
+                    <Text style={{ fontSize: 12, color: colors.primary, fontWeight: "600" }}>Clear</Text>
+                  </Pressable>
+                </View>
+                <View style={{ flexDirection: "row", flexWrap: "wrap" }}>
+                  {recentSearches.map((search) => (
+                    <Pressable
+                      key={search.query}
+                      onPress={() => handleQuickSearch(search.query)}
+                      style={({ pressed }) => ({
+                        paddingHorizontal: 12,
+                        paddingVertical: 6,
+                        borderRadius: 16,
+                        backgroundColor: colors.primary,
+                        marginRight: 8,
+                        marginBottom: 8,
+                        opacity: pressed ? 0.8 : 1,
+                      })}
+                    >
+                      <Text style={{ color: "white", fontSize: 12, fontWeight: "600" }}>
+                        {search.query}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Top Searches */}
+            {topSearches.length > 0 && (
+              <View style={{ marginBottom: 20 }}>
+                <Text style={{ fontSize: 14, fontWeight: "600", color: colors.foreground, marginBottom: 12 }}>
+                  🔥 Trending Searches
+                </Text>
+                {topSearches.map((search, index) => (
+                  <Pressable
+                    key={search.query}
+                    onPress={() => handleQuickSearch(search.query)}
+                    style={({ pressed }) => ({
+                      padding: 12,
+                      borderRadius: 8,
+                      backgroundColor: colors.surface,
+                      marginBottom: 8,
+                      flexDirection: "row",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      opacity: pressed ? 0.7 : 1,
+                    })}
+                  >
+                    <View style={{ flexDirection: "row", alignItems: "center", gap: 8 }}>
+                      <Text style={{ fontSize: 16, fontWeight: "700", color: colors.primary }}>
+                        #{index + 1}
+                      </Text>
+                      <Text style={{ fontSize: 14, color: colors.foreground, fontWeight: "500" }}>
+                        {search.query}
+                      </Text>
+                    </View>
+                    <Text style={{ fontSize: 12, color: colors.muted }}>
+                      {search.count} {search.count === 1 ? "search" : "searches"}
+                    </Text>
+                  </Pressable>
+                ))}
+              </View>
+            )}
+
+            {/* Empty State */}
+            {recentSearches.length === 0 && topSearches.length === 0 && (
+              <View style={{ alignItems: "center", paddingVertical: 60 }}>
+                <Text style={{ fontSize: 48, marginBottom: 16 }}>🔎</Text>
+                <Text style={{ fontSize: 16, fontWeight: "600", color: colors.foreground, marginBottom: 8 }}>
+                  Start Searching
+                </Text>
+                <Text style={{ fontSize: 14, color: colors.muted, textAlign: "center" }}>
+                  Search across all your tasks, goals, and habits
+                </Text>
+              </View>
+            )}
+          </>
         ) : totalResults === 0 ? (
           <View style={{ alignItems: "center", paddingVertical: 60 }}>
             <Text style={{ fontSize: 48, marginBottom: 16 }}>😕</Text>
@@ -264,7 +622,7 @@ export default function SearchScreen() {
               No Results Found
             </Text>
             <Text style={{ fontSize: 14, color: colors.muted, textAlign: "center" }}>
-              Try a different search term
+              Try a different search term or adjust filters
             </Text>
           </View>
         ) : (
