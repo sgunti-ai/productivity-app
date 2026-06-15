@@ -2,6 +2,7 @@ import React, { createContext, useContext, useReducer, useEffect, ReactNode } fr
 import { Task, Goal, Habit, StreakData, getTasks, getGoals, getHabits, getStreaks, saveTask, deleteTask, saveGoal, deleteGoal, updateGoalProgress, saveHabit, deleteHabit, updateStreakData, getStreakData, clearAllData } from "./storage";
 import { SAMPLE_TASKS, SAMPLE_GOALS, SAMPLE_HABITS } from "./sample-data";
 import { createNextRecurringTask } from "./recurring-tasks";
+import { scheduleTaskReminder, scheduleGoalReminder, scheduleHabitReminder, cancelTaskNotifications, cancelGoalNotifications, cancelHabitNotifications } from "./notification-service";
 
 interface AppState {
   tasks: Task[];
@@ -188,6 +189,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
         await updateGoalProgress(task.goalId);
       }
 
+      // Schedule or reschedule notification
+      if (!task.completed) {
+        await scheduleTaskReminder(task);
+      }
+
       // Update streak if task is completed
       if (task.completed) {
         const streak = await updateStreakData(task.id, false);
@@ -212,6 +218,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const deleteTaskHandler = async (taskId: string) => {
     try {
       const task = state.tasks.find((t) => t.id === taskId);
+      // Cancel notifications before deleting
+      await cancelTaskNotifications(taskId);
       await deleteTask(taskId);
       dispatch({ type: "DELETE_TASK", payload: taskId });
 
@@ -227,6 +235,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       await saveGoal(goal);
       dispatch({ type: "ADD_GOAL", payload: goal });
+      // Schedule notification for goal deadline
+      await scheduleGoalReminder(goal);
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: "Failed to add goal" });
     }
@@ -236,6 +246,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       await saveGoal(goal);
       dispatch({ type: "UPDATE_GOAL", payload: goal });
+      // Reschedule notification for updated goal
+      await cancelGoalNotifications(goal.id);
+      if (goal.status === "active") {
+        await scheduleGoalReminder(goal);
+      }
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: "Failed to update goal" });
     }
@@ -243,6 +258,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const deleteGoalHandler = async (goalId: string) => {
     try {
+      // Cancel notifications before deleting
+      await cancelGoalNotifications(goalId);
       await deleteGoal(goalId);
       dispatch({ type: "DELETE_GOAL", payload: goalId });
     } catch (error) {
@@ -254,6 +271,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       await saveHabit(habit);
       dispatch({ type: "ADD_HABIT", payload: habit });
+      // Schedule notification for daily habit
+      await scheduleHabitReminder(habit);
     } catch (error) {
       dispatch({ type: "SET_ERROR", payload: "Failed to add habit" });
     }
@@ -270,6 +289,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const deleteHabitHandler = async (habitId: string) => {
     try {
+      // Cancel notifications before deleting
+      await cancelHabitNotifications(habitId);
       await deleteHabit(habitId);
       dispatch({ type: "DELETE_HABIT", payload: habitId });
     } catch (error) {
